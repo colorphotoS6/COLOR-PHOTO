@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COLOR PHOTO - Hệ thống quản lý & chọn ảnh Studio</title>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        studioDark: '#0a0a0c',
+                        studioCard: '#121216',
+                        studioCardHover: '#1a1a22',
+                        studioBorder: '#1f1f26',
+                        studioAccent: '#10b981', /* Emerald-500 */
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f1f26;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+        /* Heart pulse micro-animation */
+        @keyframes heartPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        .heart-active {
+            animation: heartPulse 0.35s ease-out;
+            color: #ef4444 !important;
+            fill: #ef4444 !important;
+        }
+        .album-card-dashed {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%233f3f46' stroke-width='2' stroke-dasharray='8%2c 8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
+        .album-card-dashed:hover {
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%2310b981' stroke-width='2' stroke-dasharray='8%2c 8' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
+        /* Custom Switch */
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #10b981;
+        }
+        .toggle-checkbox:checked + .toggle-label .toggle-dot {
+            transform: translateX(100%);
+        }
+        /* Watermark pattern simulation overlay */
+        .watermark-overlay-grid {
+            background-image: radial-gradient(circle, transparent 20%, #000 20%, #000 80%, transparent 80%, transparent), 
+                              radial-gradient(circle, transparent 20%, #000 20%, #000 80%, transparent 80%, transparent);
+            background-size: 64px 64px;
+            background-position: 0 0, 32px 32px;
+        }
+    </style>
+</head>
+<body class="bg-[#08080a] text-gray-200 min-h-screen flex flex-col md:flex-row antialiased overflow-x-hidden">
+
+    <!-- CỬA SỔ ĐĂNG NHẬP / KÍCH HOẠT (LOGIN SCREEN) -->
+    <div id="login-overlay" class="fixed inset-0 bg-[#08080a] z-50 flex items-center justify-center p-4 transition-all duration-500 overflow-hidden">
+        <!-- Aurora glow backdrops -->
+        <div class="absolute w-80 h-80 rounded-full bg-sky-500/10 blur-[100px] top-1/4 left-1/4 pointer-events-none"></div>
+        <div class="absolute w-80 h-80 rounded-full bg-rose-500/10 blur-[100px] bottom-1/4 right-1/4 pointer-events-none"></div>
+
+        <div class="bg-studioCard/85 backdrop-blur-xl border border-studioBorder rounded-3xl w-full max-w-md p-8 shadow-2xl relative z-10 flex flex-col items-center text-center">
+            <!-- Brand Logo & Header -->
+            <div class="relative w-16 h-16 mb-4 flex items-center justify-center pointer-events-none">
+                <svg viewBox="0 0 24 24" class="w-full h-full fill-none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.36 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14C0 17.31 2.69 20 6 20H19C21.76 20 24 17.76 24 15C24 12.36 21.95 10.22 19.36 10.04Z" fill="url(#loginCloudGrad)" />
+                    <defs>
+                        <linearGradient id="loginCloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#38bdf8" />
+                            <stop offset="50%" stop-color="#a855f7" />
+                            <stop offset="100%" stop-color="#f43f5e" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="absolute text-xs font-black text-white top-[22px]">CP</span>
+            </div>
+            
+            <h1 class="text-2xl font-bold tracking-wider text-white">
+                COLOR <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-rose-400">PHOTO</span>
+            </h1>
+            <p class="text-xs text-gray-500 uppercase tracking-widest mt-1 mb-8 font-semibold">Studio Desktop Workspace</p>
+            
+            <!-- TAB 1: Google login container -->
+            <div id="login-panel-google" class="w-full space-y-5">
+                <p class="text-xs text-gray-400">Hệ thống sẽ mở trình duyệt để bạn chọn tài khoản Google thật. Dữ liệu sẽ tự động đồng bộ về ứng dụng.</p>
+                
+                <button onclick="handleGoogleLogin()" class="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-4 rounded-xl transition duration-150 flex items-center justify-center gap-3 shadow-md focus:outline-none">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                    </svg>
+                    <span>Đăng nhập với Google</span>
+                </button>
+
+
+
+
+            </div>
+
+            <!-- Loading overlay inside the login card -->
+            <div id="login-loading" class="absolute inset-0 bg-[#121216]/95 backdrop-blur-md z-20 rounded-3xl flex flex-col items-center justify-center p-8 hidden">
+                <div class="w-12 h-12 rounded-full border-4 border-studioBorder border-t-studioAccent animate-spin mb-4"></div>
+                <p class="text-sm font-bold text-white" id="login-loading-text">Đang kết nối...</p>
+                <p class="text-xs text-gray-500 mt-1">Vui lòng kiểm tra và duyệt trên trình duyệt web của bạn</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR CHÍNH -->
+    <aside class="w-full md:w-64 bg-[#0c0c0e] border-b md:border-b-0 md:border-r border-studioBorder flex flex-col justify-between p-5 shrink-0 z-30">
+        <div>
+            <!-- Logo Thương Hiệu "COLOR PHOTO" -->
+            <div class="flex items-center gap-3 py-3 mb-6">
+                <div class="relative w-10 h-10 shrink-0 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" class="w-full h-full fill-none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.36 10.04C18.67 6.59 15.64 4 12 4C9.11 4 6.6 5.64 5.35 8.04C2.34 8.36 0 10.91 0 14C0 17.31 2.69 20 6 20H19C21.76 20 24 17.76 24 15C24 12.36 21.95 10.22 19.36 10.04Z" fill="url(#cloudGrad)" />
+                        <defs>
+                            <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#38bdf8" />
+                                <stop offset="50%" stop-color="#a855f7" />
+                                <stop offset="100%" stop-color="#f43f5e" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span class="absolute text-[9px] font-extrabold text-white top-[14px]">CP</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold tracking-wider text-white flex items-center gap-1" id="sidebar-brand-name">
+                        COLOR <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-rose-400">PHOTO</span>
+                    </h2>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Studio Workspace</p>
+                </div>
+            </div>
+
+            <!-- Thẻ Thông tin Người Dùng & Trạng thái kích hoạt (Được cập nhật động từ JS) -->
+            <div id="user-profile-card" class="bg-studioCard border border-studioBorder rounded-xl p-3 mb-6 flex flex-col gap-2.5">
+                <!-- Nội dung hiển thị do renderUserProfile() sinh ra -->
+            </div>
+
+            <!-- Danh sách Menu Điều hướng -->
+            <nav class="space-y-1" id="sidebar-menu">
+                <button onclick="switchTab('all-albums')" id="btn-all-albums" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group bg-white text-gray-900 shadow-md">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 opacity-90 group-hover:scale-105 transition-transform">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-19.5 0A2.25 2.25 0 0 0 4.5 15h15a2.25 2.25 0 0 0 2.25-2.25m-19.5 0v.25A2.25 2.25 0 0 0 4.5 17.5h15a2.25 2.25 0 0 0 2.25-2.25v-.25m-18-6.375V5.75L12 3m0 0 7.5 2.75v3.375m-15 0V9.75L12 7m0 0 7.5 2.75V9.75" />
+                        </svg>
+                        <span>Tất cả album</span>
+                    </div>
+                    <span class="text-xs bg-gray-200 text-gray-800 px-2 py-0.5 rounded-full font-bold" id="count-all">3</span>
+                </button>
+
+                <button onclick="switchTab('processing')" id="btn-processing" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group text-gray-400 hover:bg-studioCard hover:text-white">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 opacity-80 group-hover:scale-105 transition-transform">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21L14.907 18M18 10.5c0-2.62-1.64-4.86-3.95-5.75L12 9.75m0-6.75l-2.05 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Đang culling ảnh</span>
+                    </div>
+                    <span class="text-xs bg-studioCard text-gray-400 px-2 py-0.5 rounded-full border border-studioBorder font-semibold" id="count-processing">1</span>
+                </button>
+
+                <button onclick="switchTab('completed')" id="btn-completed" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group text-gray-400 hover:bg-studioCard hover:text-white">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 opacity-80 group-hover:scale-105 transition-transform">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+                        </svg>
+                        <span>Đã hoàn thiện</span>
+                    </div>
+                    <span class="text-xs bg-studioCard text-gray-400 px-2 py-0.5 rounded-full border border-studioBorder font-semibold" id="count-completed">2</span>
+                </button>
+
+                <button onclick="switchTab('progress-tracking')" id="btn-progress" class="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group text-gray-400 hover:bg-studioCard hover:text-white">
+                    <div class="flex items-center gap-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 opacity-80 group-hover:scale-105 transition-transform">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125z" />
+                        </svg>
+                        <span>Xem Tiến Độ</span>
+                    </div>
+                    <span class="text-[10px] bg-studioAccent/15 text-studioAccent px-2 py-0.5 rounded border border-studioAccent/20 font-bold uppercase tracking-wider scale-90">Live</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Phần dưới Sidebar: Bộ lưu trữ và Cài đặt -->
+        <div class="mt-8 space-y-5">
+            <div class="bg-studioCard border border-studioBorder rounded-xl p-3">
+                <div class="flex justify-between items-center text-[11px] mb-1.5">
+                    <span class="text-gray-400 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 fill-current text-sky-400" viewBox="0 0 24 24">
+                            <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/>
+                        </svg>
+                        Google Drive
+                    </span>
+                    <span class="text-gray-300 font-medium">14.10 / 15.00 GB</span>
+                </div>
+                <div class="w-full bg-studioBorder h-2 rounded-full overflow-hidden">
+                    <div class="bg-gradient-to-r from-sky-400 to-rose-500 h-full w-[94%] rounded-full"></div>
+                </div>
+            </div>
+
+            <!-- Nút Cài Đặt và Thông tin chân trang -->
+            <div class="space-y-4">
+                <button onclick="switchTab('settings')" id="btn-settings" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group text-gray-400 hover:bg-studioCard hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 opacity-80 group-hover:rotate-45 transition-transform duration-300">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" />
+                    </svg>
+                    <span>Cài đặt Workspace</span>
+                </button>
+                <div class="text-[10px] text-gray-500 leading-relaxed font-light border-t border-studioBorder pt-4 space-y-1">
+                    <p class="font-semibold text-gray-400">© 2026 Color Photo | Bùi Anh Thơ</p>
+                    <p id="sidebar-zalo-info">Zalo: 0363578794</p>
+                    <p id="sidebar-fb-info" class="truncate">facebook.com/colorphoto</p>
+                    <p>All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- KHU VỰC NỘI DUNG CHÍNH -->
+    <main class="flex-1 bg-studioDark min-h-screen flex flex-col p-6 md:p-8 relative overflow-y-auto">
+
+        <!-- TAB: TẤT CẢ ALBUM -->
+        <div id="tab-all-albums" class="tab-content block space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-studioBorder pb-5">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Tất cả album</h1>
+                    <p class="text-sm text-gray-400 mt-1">Danh sách dự án và album ảnh đang quản lý trên hệ thống</p>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </span>
+                    <input type="text" id="album-search" oninput="filterAllAlbums()" placeholder="Tìm kiếm album..." class="w-full bg-[#121216] border border-studioBorder text-sm text-white placeholder-gray-500 pl-10 pr-4 py-2.5 rounded-full focus:outline-none focus:border-studioAccent transition duration-150">
+                </div>
+            </div>
+
+            <!-- Grid Album -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="albums-grid">
+                <!-- Nút TẠO ALBUM -->
+                <button onclick="openCreateAlbumModal()" class="album-card-dashed rounded-2xl flex flex-col items-center justify-center p-8 min-h-[240px] transition duration-200 group text-center hover:bg-studioCard/30 cursor-pointer">
+                    <div class="w-12 h-12 rounded-full border border-studioBorder flex items-center justify-center mb-4 group-hover:border-studioAccent group-hover:bg-studioAccent/10 transition duration-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6 text-gray-400 group-hover:text-studioAccent transition duration-200">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-300 group-hover:text-white transition duration-200">TẠO ALBUM MỚI</span>
+                    <span class="text-xs text-gray-500 mt-1">Tải lên hoặc liên kết Google Drive</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB: ĐANG HẬU KỲ / CULLING -->
+        <div id="tab-processing" class="tab-content hidden space-y-6">
+            <div class="border-b border-studioBorder pb-5">
+                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Đang culling ảnh</h1>
+                <p class="text-sm text-gray-400 mt-1">Các album đang trong giai đoạn thiết kế, hậu kỳ và culling</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="processing-grid">
+                <!-- Nội dung được fill từ JS -->
+            </div>
+        </div>
+
+        <!-- TAB: ĐÃ HOÀN THIỆN -->
+        <div id="tab-completed" class="tab-content hidden space-y-6">
+            <div class="border-b border-studioBorder pb-5">
+                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Đã hoàn thiện</h1>
+                <p class="text-sm text-gray-400 mt-1">Các album đã hoàn thành Retouch và bàn giao khách hàng</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="completed-grid">
+                <!-- Nội dung được fill từ JS -->
+            </div>
+        </div>
+
+        <!-- TAB: XEM TIẾN ĐỘ -->
+        <div id="tab-progress-tracking" class="tab-content hidden space-y-6">
+            <div class="border-b border-studioBorder pb-5">
+                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Tiến độ công việc</h1>
+                <p class="text-sm text-gray-400 mt-1">Theo dõi live tiến độ culling, chỉnh sửa và feedback của khách hàng</p>
+            </div>
+            <div class="bg-studioCard border border-studioBorder rounded-2xl p-6 max-w-4xl space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-studioDark/50 p-4 rounded-xl border border-studioBorder text-center">
+                        <span class="text-xs text-gray-500 block uppercase font-medium">Tổng Album</span>
+                        <span class="text-3xl font-bold text-white mt-1 block" id="progress-total-albums">3</span>
+                    </div>
+                    <div class="bg-studioDark/50 p-4 rounded-xl border border-studioBorder text-center">
+                        <span class="text-xs text-gray-500 block uppercase font-medium">Ảnh đã thích chọn</span>
+                        <span class="text-3xl font-bold text-studioAccent mt-1 block">72</span>
+                    </div>
+                    <div class="bg-studioDark/50 p-4 rounded-xl border border-studioBorder text-center">
+                        <span class="text-xs text-gray-500 block uppercase font-medium">Tỷ lệ hoàn thành</span>
+                        <span class="text-3xl font-bold text-sky-400 mt-1 block">66%</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-studioAccent animate-pulse"></span>
+                        Theo dõi tác vụ thực tế
+                    </h3>
+                    <div class="space-y-3" id="progress-tasks-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CÀI ĐẶT -->
+        <div id="tab-settings" class="tab-content hidden space-y-6">
+            <div class="border-b border-studioBorder pb-5">
+                <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Cài đặt Workspace</h1>
+                <p class="text-sm text-gray-400 mt-1">Cấu hình các tham số hiển thị, watermark bảo mật và thông tin liên hệ</p>
+            </div>
+
+            <!-- List settings cards -->
+            <div class="space-y-4 max-w-4xl">
+                <!-- 1. Phân nhóm album -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Phân nhóm album theo tháng/năm</h3>
+                        <p class="text-xs text-gray-500 mt-1">Bật để sắp xếp lại các album theo từng mốc thời gian cụ thể.</p>
+                    </div>
+                    <div class="relative shrink-0">
+                        <input type="checkbox" id="toggle-group-date" class="sr-only toggle-checkbox" checked>
+                        <label for="toggle-group-date" class="toggle-label block w-11 h-6 bg-zinc-800 border border-studioBorder rounded-full cursor-pointer transition-colors duration-200 relative">
+                            <span class="toggle-dot absolute top-[3px] left-[3px] w-4.5 h-4.5 bg-white rounded-full transition-transform duration-200 shadow-md"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. Tự động đồng bộ Drive -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Tự động đồng bộ Drive</h3>
+                        <p class="text-xs text-gray-500 mt-1">Bật để tự động đồng bộ album lên Drive khi đủ điều kiện.</p>
+                    </div>
+                    <div class="relative shrink-0">
+                        <input type="checkbox" id="toggle-sync-drive" class="sr-only toggle-checkbox">
+                        <label for="toggle-sync-drive" class="toggle-label block w-11 h-6 bg-zinc-800 border border-studioBorder rounded-full cursor-pointer transition-colors duration-200 relative">
+                            <span class="toggle-dot absolute top-[3px] left-[3px] w-4.5 h-4.5 bg-white rounded-full transition-transform duration-200 shadow-md"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Chạy nền cùng Windows -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Chạy nền cùng Windows</h3>
+                        <p class="text-xs text-gray-500 mt-1">Cho phép ứng dụng chạy nền cùng hệ thống khi đóng app.</p>
+                    </div>
+                    <div class="relative shrink-0">
+                        <input type="checkbox" id="toggle-background-run" class="sr-only toggle-checkbox" checked>
+                        <label for="toggle-background-run" class="toggle-label block w-11 h-6 bg-zinc-800 border border-studioBorder rounded-full cursor-pointer transition-colors duration-200 relative">
+                            <span class="toggle-dot absolute top-[3px] left-[3px] w-4.5 h-4.5 bg-white rounded-full transition-transform duration-200 shadow-md"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 4. Watermark -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-white">Chữ chìm Watermark</h3>
+                        <p class="text-xs text-gray-500 mt-1 truncate">Chữ chìm đóng lên ảnh phóng to chống copy trái phép.</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-xs font-semibold px-3 py-1.5 bg-zinc-900 rounded-lg text-gray-300 border border-studioBorder tracking-wider" id="watermark-val">CHƯA THANH TOÁN</span>
+                        <button onclick="editSetting('watermark')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4b. Vị trí và Độ mờ Watermark -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Vị trí đóng dấu Watermark</h3>
+                        <p class="text-xs text-gray-500 mt-1 mb-3">Tùy chỉnh góc đóng dấu bản quyền trên ảnh.</p>
+                        <select id="watermark-position" onchange="updateWatermarkConfig()" class="bg-studioDark border border-studioBorder text-sm rounded-xl px-4 py-2 text-white w-full focus:outline-none focus:border-studioAccent">
+                            <option value="center">Chính giữa ảnh (Center)</option>
+                            <option value="bottom-right">Góc dưới bên phải (Bottom Right)</option>
+                            <option value="pattern">Lặp lại phủ kín (Tile Pattern)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Độ mờ Watermark (Opacity)</h3>
+                        <p class="text-xs text-gray-500 mt-1 mb-2">Điều chỉnh độ hiển thị mờ/rõ: <span id="watermark-opacity-val" class="text-studioAccent font-mono font-bold">30%</span></p>
+                        <input type="range" id="watermark-opacity" min="10" max="90" value="30" oninput="updateWatermarkConfig()" class="w-full accent-studioAccent bg-studioDark rounded-lg h-2 cursor-pointer border border-studioBorder">
+                    </div>
+                </div>
+
+                <!-- 5. Tên thương hiệu -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-white">Tên thương hiệu Studio</h3>
+                        <p class="text-xs text-gray-500 mt-1 truncate">Tên hiển thị chính trên ứng dụng và tab duyệt web.</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-xs font-semibold px-4 py-1.5 bg-zinc-900 rounded-lg text-white border border-studioBorder tracking-wide" id="brand-val">COLOR PHOTO</span>
+                        <button onclick="editSetting('brand')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5b. Số điện thoại Zalo -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-white">Số điện thoại Zalo hỗ trợ</h3>
+                        <p class="text-xs text-gray-500 mt-1">Liên hệ hiện dưới chân trang Sidebar.</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-xs font-semibold px-4 py-1.5 bg-zinc-900 rounded-lg text-white border border-studioBorder tracking-wide" id="zalo-val">0363578794</span>
+                        <button onclick="editSetting('zalo')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5c. Link Facebook Studio -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-white">Liên kết Facebook Studio</h3>
+                        <p class="text-xs text-gray-500 mt-1">Địa chỉ trang Fanpage của Studio của bạn.</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-xs font-semibold px-4 py-1.5 bg-zinc-900 rounded-lg text-gray-300 border border-studioBorder" id="fb-val">facebook.com/colorphoto</span>
+                        <button onclick="editSetting('fb')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+
+
+                <!-- 6. Tên miền tùy chỉnh -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-white">Tên miền tùy chỉnh (CNAME)</h3>
+                        <p class="text-xs text-gray-500 mt-1 truncate">Ví dụ: gallery.anhcuoidep.vn (cần trỏ DNS trước khi dùng).</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-xs px-4 py-1.5 bg-zinc-900 rounded-lg text-gray-400 border border-studioBorder font-mono" id="domain-val">gallery.abc.vn</span>
+                        <button onclick="editSetting('domain')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6a. Địa chỉ trang chọn ảnh (Viewer Base URL) -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div class="min-w-0">
+                        <h3 class="text-base font-semibold text-white">Địa chỉ trang chọn ảnh (Viewer Base URL)</h3>
+                        <p class="text-xs text-gray-500 mt-1 truncate">Trang web tĩnh để khách xem ảnh và chọn (ví dụ: https://my-gallery.vercel.app).</p>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <span class="text-xs px-4 py-1.5 bg-zinc-900 rounded-lg text-gray-400 border border-studioBorder font-mono" id="viewer-base-url-val">https://colorphoto-viewer.vercel.app</span>
+                        <button onclick="editSetting('viewer_base_url')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6a2. Cấu hình Google Credentials (Client ID & Secret) -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 hover:border-studioBorder/85 transition duration-150 flex flex-col gap-4">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Cấu hình Google API Credentials</h3>
+                        <p class="text-xs text-gray-500 mt-1">Sử dụng Google OAuth Client ID & Secret riêng của Studio (mặc định nếu để trống).</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Google Client ID</label>
+                            <div class="flex items-center gap-2">
+                                <span class="flex-grow text-xs px-3 py-2 bg-zinc-900 rounded-lg text-gray-400 border border-studioBorder font-mono truncate" id="client-id-val">Đang tải...</span>
+                                <button onclick="editSetting('client_id')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Google Client Secret</label>
+                            <div class="flex items-center gap-2">
+                                <span class="flex-grow text-xs px-3 py-2 bg-zinc-900 rounded-lg text-gray-400 border border-studioBorder font-mono truncate" id="client-secret-val">••••••••••••••••</span>
+                                <button onclick="editSetting('client_secret')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6b. Kích hoạt Key bản quyền -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 hover:border-studioBorder/85 transition duration-150 flex flex-col gap-4">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Kích hoạt Key bản quyền</h3>
+                        <p class="text-xs text-gray-500 mt-1">Nhập mã bản quyền được cấp bởi quản trị viên để kích hoạt sử dụng trọn đời.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="license-key-input" placeholder="Mã kích hoạt (Ví dụ: CP-8888-9999)" class="flex-1 bg-studioDark border border-studioBorder rounded-xl text-xs text-white px-4 py-2.5 font-mono focus:outline-none focus:border-studioAccent placeholder-gray-600">
+                        <button onclick="handleKeyActivation()" class="px-5 py-2.5 bg-studioAccent hover:bg-emerald-600 text-gray-950 text-xs font-bold rounded-xl transition duration-150 shrink-0">
+                            Kích Hoạt
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 7. Đăng xuất Google -->
+                <div class="bg-studioCard border border-studioBorder rounded-2xl p-5 flex items-center justify-between gap-6 hover:border-studioBorder/85 transition duration-150">
+                    <div>
+                        <h3 class="text-base font-semibold text-white">Đăng xuất Tài khoản</h3>
+                        <p class="text-xs text-gray-500 mt-1">Xóa phiên làm việc hiện tại và quay về màn hình khóa.</p>
+                    </div>
+                    <button onclick="logoutGoogle()" class="flex items-center gap-2 px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-rose-950/20 hover:shadow-rose-900/30 transition-all shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                        </svg>
+                        Đăng xuất tài khoản
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: GIAO DIỆN CHỌN ẢNH CỦA KHÁCH HÀNG (COLOR PHOTO HEART SELECTION CLONE) -->
+        <div id="view-client-gallery" class="hidden flex-1 flex flex-col space-y-6">
+            <!-- Header của khách xem album -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-studioBorder pb-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="closeClientView()" class="p-2.5 bg-studioCard hover:bg-studioBorder border border-studioBorder rounded-xl text-gray-400 hover:text-white transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path></svg>
+                    </button>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-bold text-white" id="client-album-title">Album cưới Tuấn & Ly</h1>
+                        <p class="text-xs text-studioAccent mt-0.5 flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 bg-studioAccent rounded-full animate-ping"></span>
+                            Chế độ khách hàng: Thả tim để chọn ảnh retouch làm album
+                        </p>
+                    </div>
+                </div>
+                <div class="text-xs text-gray-500 text-left sm:text-right">
+                    <p class="font-bold text-gray-400 tracking-wider">COLOR PHOTO PREVIEW GALLERY</p>
+                    <p>Bấm vào ảnh để xem nét căng • Nhấp hình Trái Tim để chọn</p>
+                </div>
+            </div>
+
+            <!-- Thanh công cụ lọc ảnh -->
+            <div class="bg-studioCard border border-studioBorder p-3 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <span class="text-gray-400 shrink-0">Lọc ảnh:</span>
+                    <button id="filter-all-btn" onclick="toggleClientFilter('all')" class="px-3.5 py-1.5 rounded-lg bg-studioBorder text-white font-medium text-xs border border-studioAccent/35 transition">Tất cả</button>
+                    <button id="filter-liked-btn" onclick="toggleClientFilter('liked')" class="px-3.5 py-1.5 rounded-lg bg-[#121216] text-gray-500 font-medium text-xs border border-transparent hover:text-white transition">Ảnh đã thích ❤️</button>
+                </div>
+                <div class="relative w-full sm:w-60">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                    <input type="text" id="client-search" oninput="filterClientImages()" placeholder="Tìm tên file (VD: DSC_001)..." class="w-full bg-[#08080a] border border-studioBorder text-xs text-white placeholder-gray-600 pl-8.5 pr-3 py-2 rounded-lg focus:outline-none focus:border-studioAccent">
+                </div>
+            </div>
+
+            <!-- Grid ảnh duyệt -->
+            <div id="client-gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-24">
+                <!-- JS will render cards here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- THANH BOTTOM CỐ ĐỊNH CHỌN ẢNH -->
+    <div id="client-bottom-bar" class="fixed bottom-0 left-0 right-0 bg-[#0c0c0e]/95 backdrop-blur-md border-t border-studioBorder p-4 shadow-2xl z-40 transform translate-y-full transition-transform duration-300 flex justify-center">
+        <div class="w-full max-w-6xl flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-red-500/10 rounded-lg border border-red-500/20 text-red-500 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current animate-pulse" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                </div>
+                <div>
+                    <span class="text-xs text-gray-400 block uppercase tracking-wider font-semibold">Khách hàng yêu thích</span>
+                    <span class="text-base font-bold text-white"><span id="client-selected-count" class="text-red-500 text-lg font-extrabold">0</span> ảnh đã thả tim</span>
+                </div>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button onclick="deselectAllClientImages()" class="bg-[#1c1c24] hover:bg-[#282834] border border-studioBorder text-gray-300 text-xs font-semibold px-4 py-2.5 rounded-xl transition w-full sm:w-auto">
+                    Bỏ chọn tất cả
+                </button>
+                <button onclick="exportSelectedFiles()" class="bg-studioAccent hover:bg-emerald-600 text-gray-900 font-bold px-6 py-2.5 rounded-xl transition duration-150 w-full sm:w-auto flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 6.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0 0 15 2.25h-1.5a2.251 2.251 0 0 0-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v4.125c0 .621.504 1.125 1.125 1.125H6.75m0-6.375V14.625"></path></svg>
+                    Copy tên file chọn
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-3 pointer-events-none w-80">
+        <!-- Dynaymic notification toasts will appear here -->
+    </div>
+
+    <!-- MODAL: TẠO ALBUM MỚI (POPUP) -->
+    <div id="modal-create-album" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-studioCard border border-studioBorder rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl transform transition-all">
+            <div class="px-6 py-4 border-b border-studioBorder flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">Tạo Album & Liên Kết Google Drive</h3>
+                <button onclick="closeCreateAlbumModal()" class="text-gray-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Tên Album / Dự Án</label>
+                    <input type="text" id="input-album-name" placeholder="Ví dụ: Đám cưới Tuấn & Ly" class="w-full bg-studioDark border border-studioBorder rounded-xl text-sm text-white px-4 py-2.5 focus:outline-none focus:border-studioAccent">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Trạng Thái Dự Án</label>
+                    <select id="input-album-status" class="w-full bg-studioDark border border-studioBorder rounded-xl text-sm text-white px-4 py-2.5 focus:outline-none focus:border-studioAccent">
+                        <option value="processing">Đang culling ảnh</option>
+                        <option value="completed">Đã hoàn thiện</option>
+                    </select>
+                </div>
+                
+                <!-- Toggle phương thức -->
+                <div class="grid grid-cols-2 gap-2 p-1 bg-[#0a0a0d] border border-studioBorder rounded-xl">
+                    <button type="button" onclick="setCreateMethod('upload')" id="method-btn-upload" class="py-2 text-xs font-bold rounded-lg transition-all bg-studioBorder text-white">Tải ảnh từ máy tính</button>
+                    <button type="button" onclick="setCreateMethod('link')" id="method-btn-link" class="py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white">Liên kết Drive ID</button>
+                </div>
+
+                <!-- Method Upload -->
+                <div id="method-upload-section" class="space-y-2">
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Thư mục ảnh trên máy tính</label>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="handleSelectLocalFolder()" class="px-4 py-2.5 bg-[#121216] border border-studioBorder hover:bg-studioBorder/50 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shrink-0">
+                            Chọn thư mục...
+                        </button>
+                        <div class="flex-1 bg-[#0a0a0d] border border-studioBorder rounded-xl px-3 py-2 flex items-center justify-between min-w-0">
+                            <span id="selected-path-display" class="text-xs text-gray-500 truncate font-mono">Chưa chọn thư mục</span>
+                            <span id="selected-count-badge" class="text-[10px] bg-studioAccent/10 text-studioAccent border border-studioAccent/20 px-2 py-0.5 rounded-full font-bold hidden">0 ảnh</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Method Link -->
+                <div id="method-link-section" class="space-y-3 hidden">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">ID thư mục Google Drive</label>
+                        <button type="button" onclick="loadUserDriveFolders()" class="text-[10px] text-sky-400 hover:text-sky-300 font-bold flex items-center gap-1 transition">
+                            🔄 Tải danh sách từ Drive
+                        </button>
+                    </div>
+                    <input type="text" id="input-folder-id" placeholder="Dán mã ID nằm sau drive.google.com/drive/folders/..." class="w-full bg-studioDark border border-studioBorder rounded-xl text-sm text-white px-4 py-2.5 font-mono focus:outline-none focus:border-studioAccent">
+                    
+                    <div id="drive-folders-list-container" class="hidden space-y-1">
+                        <label class="block text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Hoặc chọn thư mục có sẵn của bạn:</label>
+                        <select id="drive-folder-select" onchange="document.getElementById('input-folder-id').value = this.value" class="w-full bg-studioDark border border-studioBorder rounded-xl text-xs text-gray-300 px-3 py-2.5 focus:outline-none focus:border-studioAccent">
+                            <option value="">-- Chọn một thư mục --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ảnh bìa (URL hoặc để trống lấy ảnh đầu tiên làm bìa)</label>
+                    <input type="text" id="input-cover-url" placeholder="https://images.unsplash.com/photo-..." class="w-full bg-studioDark border border-studioBorder rounded-xl text-sm text-white px-4 py-2.5 focus:outline-none focus:border-studioAccent">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-studioBorder bg-[#0c0c0e] flex justify-end gap-3">
+                <button onclick="closeCreateAlbumModal()" class="px-4 py-2 bg-[#121216] border border-studioBorder hover:bg-studioCardHover text-gray-300 text-sm font-medium rounded-xl transition">Hủy</button>
+                <button onclick="submitCreateAlbum()" class="px-5 py-2 bg-studioAccent hover:bg-emerald-600 text-gray-950 text-sm font-bold rounded-xl transition">Bắt Đầu Đồng Bộ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TIẾN TRÌNH UPLOAD LÊN GOOGLE DRIVE -->
+    <div id="modal-upload-progress" class="fixed inset-0 bg-black/95 backdrop-blur-md hidden z-[100] flex flex-col items-center justify-center p-6 select-none">
+        <div class="w-full max-w-md bg-studioCard border border-studioBorder rounded-2xl p-6 space-y-6 shadow-2xl relative">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-sky-400 to-rose-400 flex items-center justify-center animate-spin shrink-0">
+                    <svg class="w-6 h-6 text-gray-950" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider" id="upload-progress-title">ĐANG TẢI ẢNH LÊN GOOGLE DRIVE</h3>
+                    <p id="upload-progress-status" class="text-xs text-gray-400 mt-1 truncate">Khởi tạo tiến trình...</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between text-xs font-semibold text-gray-400">
+                    <span id="upload-progress-percentage">0%</span>
+                    <span id="upload-progress-fraction">0/0 ảnh</span>
+                </div>
+                <div class="w-full bg-[#0a0a0d] h-2.5 rounded-full overflow-hidden border border-studioBorder">
+                    <div id="upload-progress-bar" class="bg-gradient-to-r from-sky-400 to-rose-400 h-full w-0 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <p class="text-[10px] text-gray-500 text-center leading-relaxed font-medium">
+                Vui lòng không tắt ứng dụng hoặc ngắt kết nối mạng trong quá trình upload.
+            </p>
+        </div>
+    </div>
+
+    <!-- MODAL: KẾT QUẢ TẠO ALBUM CÔNG KHAI -->
+    <div id="modal-viewer-link" class="fixed inset-0 bg-black/90 backdrop-blur-sm hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-studioCard border border-studioBorder rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all">
+            <div class="px-6 py-4 border-b border-studioBorder flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">Liên kết gửi khách hàng</h3>
+                <button onclick="closeViewerLinkModal()" class="text-gray-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="text-center space-y-2">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-studioAccent flex items-center justify-center mx-auto text-xl font-bold">✓</div>
+                    <h4 class="text-base font-bold text-white" id="viewer-link-album-name">Album đã sẵn sàng!</h4>
+                    <p class="text-xs text-gray-400">Đã tự động tạo thư mục trên Drive, tải ảnh lên và cấu hình giao diện chọn ảnh Google Photos.</p>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Đường dẫn xem ảnh công khai</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="input-viewer-link-val" readonly class="flex-1 bg-studioDark border border-studioBorder rounded-xl text-xs text-studioAccent font-mono px-3 py-2.5 focus:outline-none">
+                        <button onclick="copyViewerLink()" class="px-4 py-2.5 bg-studioAccent hover:bg-emerald-600 text-gray-950 text-xs font-bold rounded-xl transition shrink-0">Sao Chép</button>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-studioBorder bg-[#0c0c0e] flex justify-end gap-2">
+                <button onclick="openViewerLinkInBrowser()" class="px-4 py-2 bg-[#121216] border border-studioBorder hover:bg-[#202026] text-gray-300 text-xs font-semibold rounded-xl transition">Xem thử giao diện</button>
+                <button onclick="closeViewerLinkModal()" class="px-5 py-2 bg-studioBorder hover:bg-studioCardHover text-white text-xs font-semibold rounded-xl transition">Hoàn Tất</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: HỘP THOẠI CHỈNH SỬA CÀI ĐẶT -->
+    <div id="modal-edit-setting" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-studioCard border border-studioBorder rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div class="px-6 py-4 border-b border-studioBorder">
+                <h3 class="text-base font-bold text-white" id="edit-setting-title">Cập nhật thiết lập</h3>
+            </div>
+            <div class="p-6">
+                <input type="text" id="input-setting-val" class="w-full bg-studioDark border border-studioBorder rounded-xl text-sm text-white px-4 py-2.5 focus:outline-none focus:border-studioAccent">
+            </div>
+            <div class="px-6 py-4 border-t border-studioBorder bg-[#0c0c0e] flex justify-end gap-2">
+                <button onclick="closeEditModal()" class="px-4 py-2 bg-studioBorder hover:bg-[#202026] text-gray-300 text-sm font-medium rounded-xl transition">Hủy</button>
+                <button onclick="saveSettingVal()" class="px-5 py-2 bg-studioAccent hover:bg-emerald-600 text-gray-900 text-sm font-bold rounded-xl transition">Cập Nhật</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX: PHÓNG TO XEM CHI TIẾT ẢNH + WATERMARK LIVE OVERLAY -->
+    <div id="lightbox-modal" class="fixed inset-0 bg-black/98 hidden z-50 flex flex-col items-center justify-center p-4">
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-3xl font-light hover:scale-105 transition-transform bg-studioCard/70 w-11 h-11 rounded-full border border-studioBorder flex items-center justify-center z-50">&times;</button>
+        
+        <div class="max-w-full max-h-[85vh] relative flex items-center justify-center select-none overflow-hidden rounded-lg">
+            <img id="lightbox-img" src="" class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-studioBorder/20">
+            <div id="lightbox-watermark-overlay" class="absolute inset-0 pointer-events-none flex flex-wrap items-center justify-center overflow-hidden select-none">
+                <!-- Dynamically constructed -->
+            </div>
+        </div>
+        <p id="lightbox-filename" class="text-sm font-medium text-gray-400 mt-4 tracking-wider"></p>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const DEFAULT_API_KEY = 'YOUR_API_KEY';
+
+        // Mảng chứa dữ liệu các Album (Load từ localStorage)
+        const defaultSampleAlbums = [
+            {
+                id: 'album-1',
+                name: 'Đám Cưới Tuấn & Phương Ly',
+                date: '02 tháng 06, 2026',
+                status: 'processing',
+                folderId: '1BEWrnRJGeXzDSHQuGVIO7d6Xw3dz1Wq',
+                cover: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=800',
+                images: [
+                    { id: '1', name: 'DSC_0001.jpg', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '2', name: 'DSC_0002.jpg', url: 'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '3', name: 'DSC_0003.jpg', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '4', name: 'DSC_0004.jpg', url: 'https://images.unsplash.com/photo-1519225495810-7512c696505a?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '5', name: 'DSC_0005.jpg', url: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '6', name: 'DSC_0006.jpg', url: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&q=80&w=1000' }
+                ],
+                selections: []
+            },
+            {
+                id: 'album-2',
+                name: 'Pre-Wedding Studio Minimal',
+                date: '28 tháng 05, 2026',
+                status: 'completed',
+                folderId: '1_LId7uI54AOn6O_wZis3_g44G_76S0x3',
+                cover: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=800',
+                images: [
+                    { id: '11', name: 'IMG_5501.jpg', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '12', name: 'IMG_5502.jpg', url: 'https://images.unsplash.com/photo-1494972308805-463bc619b34e?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '13', name: 'IMG_5503.jpg', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1000' },
+                    { id: '14', name: 'IMG_5504.jpg', url: 'https://images.unsplash.com/photo-1519225495810-7512c696505a?auto=format&fit=crop&q=80&w=1000' }
+                ],
+                selections: []
+            }
+        ];
+
+        let albums = [];
+        // Load albums from localStorage in a robust way.
+        // Only inject default samples when the key is absent (first run).
+        const saved = localStorage.getItem('cp_albums_db');
+        if (saved !== null) {
+            try {
+                albums = JSON.parse(saved);
+                if (!Array.isArray(albums)) albums = [];
+            } catch (e) {
+                console.error('Lỗi phân tích cp_albums_db:', e);
+                albums = [];
+            }
+        } else {
+            albums = defaultSampleAlbums;
+            try { localStorage.setItem('cp_albums_db', JSON.stringify(albums)); } catch (e) { }
+        }
+
+        function saveAlbums() {
+            try {
+                localStorage.setItem('cp_albums_db', JSON.stringify(albums));
+                syncWorkspaceDbToPython();
+            } catch(e) {
+                console.error("Lỗi lưu album:", e);
+            }
+        }
+
+        function getViewerLink(folderId) {
+            const baseUrl = localStorage.getItem('cp_viewer_base_url') || 'https://colorphoto-viewer.vercel.app';
+            const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+            return `${cleanUrl}/viewer.html?folder_id=${folderId}`;
+        }
+
+        // Trạng thái hệ thống
+        let selectedFiles = [];
+        let currentActiveAlbum = null;
+        let activeSettingKey = '';
+        let clientFilterMode = 'all';
+
+        const watermarkConfig = {
+            text: 'CHƯA THANH TOÁN',
+            position: 'center',
+            opacity: 30
+        };
+
+        // ==========================================
+        // HỆ THỐNG XỬ LÝ ĐĂNG NHẬP / CỬA SỔ KHÓA (GOOGLE OAUTH)
+        // ==========================================
+        
+        function toggleManualLogin() {
+            const panel = document.getElementById('manual-login-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function submitManualUrl() {
+            const urlVal = document.getElementById('manual-url-input').value.trim();
+            if (!urlVal) {
+                showToast("Lỗi dữ liệu", "Vui lòng nhập URL kết quả.", "error");
+                return;
+            }
+            try {
+                let code = '';
+                if (urlVal.includes('code=')) {
+                    const params = new URLSearchParams(urlVal.split('?')[1]);
+                    code = params.get('code');
+                } else {
+                    code = urlVal;
+                }
+
+                if (!code) {
+                    showToast("Lỗi định dạng", "Không tìm thấy mã Authorization Code (?code=...) trong liên kết.", "error");
+                    return;
+                }
+
+                const loading = document.getElementById('login-loading');
+                const loadingText = document.getElementById('login-loading-text');
+                if (loading && loadingText) {
+                    loadingText.innerText = "Đang xử lý đăng nhập thủ công...";
+                    loading.classList.remove('hidden');
+                }
+
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.submit_manual_code) {
+                    window.pywebview.api.submit_manual_code(code)
+                        .then(success => {
+                            if (success) {
+                                showToast("Đăng nhập thành công", "Đã đồng bộ tài khoản Google.", "success");
+                                document.getElementById('manual-login-panel').classList.add('hidden');
+                            } else {
+                                if (loading) loading.classList.add('hidden');
+                                showToast("Lỗi xác thực", "Không thể lấy thông tin tài khoản từ mã code này.", "error");
+                            }
+                        })
+                        .catch(err => {
+                            if (loading) loading.classList.add('hidden');
+                            showToast("Lỗi kết nối", "Không thể gọi API Python nền.", "error");
+                        });
+                } else {
+                    const activePort = window.location.port || '18000';
+                    fetch(`http://127.0.0.1:${activePort}/?code=${encodeURIComponent(code)}`)
+                        .then(response => {
+                            if (response.ok) {
+                                showToast("Đang đồng bộ", "Mã xác thực hợp lệ. Đang tải cấu hình...", "info");
+                            } else {
+                                if (loading) loading.classList.add('hidden');
+                                showToast("Lỗi kết nối", "Không thể hoàn tất xác thực. Vui lòng thử lại.", "error");
+                            }
+                        })
+                        .catch(err => {
+                            if (loading) loading.classList.add('hidden');
+                            showToast("Lỗi mạng", "Không kết nối được tới ứng dụng.", "error");
+                        });
+                }
+
+            } catch (e) {
+                showToast("Lỗi xử lý", "Định dạng URL không hợp lệ.", "error");
+            }
+        }
+
+        function handleGoogleLogin() {
+            // Lấy Google Client ID & Client Secret từ cấu hình đã lưu
+            const clientId = localStorage.getItem('cp_google_client_id') || '61801142455-ge0cl36dn1efoscr1qebnthl02qauapb.apps.googleusercontent.com';
+            const clientSecret = localStorage.getItem('cp_google_client_secret') || '';
+            
+            // Hiển thị trạng thái chờ trên app
+            const loading = document.getElementById('login-loading');
+            const loadingText = document.getElementById('login-loading-text');
+            if (loading && loadingText) {
+                loadingText.innerText = "Đang mở trình duyệt xác thực Google...";
+                loading.classList.remove('hidden');
+            }
+
+            // Thử gọi Bridge PyWebView nếu có, nếu lỗi sẽ fallback sang mở URL OAuth trên trình duyệt
+            try {
+                if (window.pywebview && window.pywebview.api && typeof window.pywebview.api.open_google_login === 'function') {
+                    const maybePromise = window.pywebview.api.open_google_login(clientId, clientSecret);
+                    if (maybePromise && typeof maybePromise.then === 'function') {
+                        maybePromise
+                            .then(oauthUrl => {
+                                if (oauthUrl) {
+                                    console.log("Opening OAuth URL from Python:", oauthUrl);
+                                    window.open(oauthUrl, '_blank');
+                                }
+                            })
+                            .catch(err => {
+                                console.error('pywebview.open_google_login error', err);
+                                if (loading) loading.classList.add('hidden');
+                                showToast('Lỗi', 'Không thể mở OAuth qua ứng dụng. Mở trình duyệt thay thế...', 'error');
+                                const activePort = window.location.port || '18000';
+                                const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=http://127.0.0.1:${activePort}/&response_type=code&scope=openid%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/drive.file%20https://www.googleapis.com/auth/drive.readonly`;
+                                window.open(oauthUrl, '_blank');
+                            });
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.error('Error calling pywebview api:', e);
+            }
+
+            // Fallback: mở URL OAuth trực tiếp trên trình duyệt
+            const activePort = window.location.port || '18000';
+            const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=http://127.0.0.1:${activePort}/&response_type=code&scope=openid%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/drive.file%20https://www.googleapis.com/auth/drive.readonly`;
+            window.open(oauthUrl, '_blank');
+        }
+
+        // Được gọi tự động từ Python khi xác thực OAuth thành công
+        function authCallbackSuccess(userProfile) {
+            localStorage.setItem('cp_is_logged_in', 'true');
+            localStorage.setItem('cp_user_profile', JSON.stringify(userProfile));
+
+            const overlay = document.getElementById('login-overlay');
+            const loading = document.getElementById('login-loading');
+            
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.style.opacity = '';
+                    overlay.style.pointerEvents = '';
+                    if (loading) loading.classList.add('hidden');
+                    
+                    renderUserProfile();
+                    showToast("Đăng nhập thành công! 🔓", `Chào mừng ${userProfile.name} đã liên kết Google Workspace.`, "success");
+                }, 300);
+            }
+        }
+
+        function handleKeyActivation() {
+            const keyInput = document.getElementById('license-key-input').value.trim();
+            if (!keyInput) {
+                showToast("Lỗi dữ liệu", "Vui lòng nhập mã kích hoạt bản quyền!", "error");
+                return;
+            }
+
+            // Nâng cấp thông tin User Profile đã có sẵn
+            let profile = {
+                name: 'Người dùng Studio',
+                email: 'Bản Google Sync',
+                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+                type: 'Bản vĩnh viễn'
+            };
+            try {
+                const saved = localStorage.getItem('cp_user_profile');
+                if (saved) {
+                    profile = JSON.parse(saved);
+                }
+            } catch(e) {}
+
+            profile.type = 'Bản vĩnh viễn';
+            profile.email = 'Key: ' + keyInput.toUpperCase();
+            localStorage.setItem('cp_user_profile', JSON.stringify(profile));
+
+            renderUserProfile();
+            showToast("Kích hoạt thành công! 🔑", "Phần mềm đã được kích hoạt bản quyền vĩnh viễn.", "success");
+            
+            // Xóa trường nhập liệu
+            document.getElementById('license-key-input').value = '';
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('cp_is_logged_in');
+            localStorage.removeItem('cp_user_profile');
+            
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.logout_google) {
+                window.pywebview.api.logout_google();
+            }
+            
+            const overlay = document.getElementById('login-overlay');
+            overlay.classList.remove('hidden');
+            
+            renderUserProfile();
+            showToast("Đã đăng xuất", "Hệ thống đã khóa truy cập an toàn.", "info");
+        }
+
+        function renderUserProfile() {
+            const card = document.getElementById('user-profile-card');
+            if (!card) return;
+
+            const isLoggedIn = localStorage.getItem('cp_is_logged_in');
+            const badge = document.getElementById('activation-status-badge');
+            
+            if (isLoggedIn === 'true') {
+                let profile = {
+                    name: 'Bùi Anh Thơ',
+                    email: 'anhtho.studio@gmail.com',
+                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+                    type: 'Bản Google Sync'
+                };
+                try {
+                    const saved = localStorage.getItem('cp_user_profile');
+                    if (saved) profile = JSON.parse(saved);
+                } catch(e) {}
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <img src="${profile.avatar}" alt="Avatar" class="w-9 h-9 rounded-full object-cover border border-studioBorder shrink-0">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs font-bold text-white truncate">${profile.name}</p>
+                            <p class="text-[10px] text-gray-500 truncate font-mono">${profile.email}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] border-t border-studioBorder pt-2.5 mt-0.5">
+                        <span class="text-studioAccent font-bold bg-emerald-950/45 px-2 py-0.5 rounded-full border border-emerald-900/35 uppercase tracking-wide scale-90 origin-left">${profile.type}</span>
+                        <button onclick="handleLogout()" class="text-gray-500 hover:text-rose-400 transition font-semibold">Đăng xuất</button>
+                    </div>
+                `;
+
+                if (badge) {
+                    if (profile.type === 'Bản vĩnh viễn') {
+                        badge.innerHTML = `<span class="text-xs font-semibold px-4 py-1.5 bg-emerald-950/45 text-studioAccent border border-emerald-900/35 rounded-lg tracking-wide">Đã kích hoạt</span>`;
+                    } else {
+                        badge.innerHTML = `<span class="text-xs font-semibold px-4 py-1.5 bg-amber-950/45 text-amber-400 border border-amber-900/35 rounded-lg tracking-wide">Chưa kích hoạt key</span>`;
+                    }
+                }
+            } else {
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-xs mb-1">
+                        <span class="text-gray-400 font-medium">Bản dùng thử</span>
+                        <span class="text-rose-400 font-semibold bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-900/30">Còn 2 ngày</span>
+                    </div>
+                    <div class="w-full bg-studioBorder h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-gradient-to-r from-sky-400 to-rose-400 h-full w-[15%]"></div>
+                    </div>
+                `;
+                if (badge) {
+                    badge.innerHTML = `<span class="text-xs font-semibold px-4 py-1.5 bg-zinc-900 text-gray-500 border border-studioBorder rounded-lg tracking-wide">Chưa đăng nhập</span>`;
+                }
+            }
+        }
+
+        // ==========================================
+        // CÁC HÀM XỬ LÝ TRANG CHỦ & PHÂN HỆ
+        // ==========================================
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('block');
+            });
+            document.getElementById('view-client-gallery').classList.add('hidden');
+            document.getElementById('client-bottom-bar').classList.add('translate-y-full');
+
+            const targetTab = document.getElementById('tab-' + tabId);
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+                targetTab.classList.add('block');
+            }
+
+            const buttons = [
+                { id: 'btn-all-albums', key: 'all-albums' },
+                { id: 'btn-processing', key: 'processing' },
+                { id: 'btn-completed', key: 'completed' },
+                { id: 'btn-progress', key: 'progress-tracking' },
+                { id: 'btn-settings', key: 'settings' }
+            ];
+
+            buttons.forEach(btnInfo => {
+                const btn = document.getElementById(btnInfo.id);
+                if (!btn) return;
+                if (btnInfo.key === tabId) {
+                    btn.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group bg-white text-gray-900 shadow-md";
+                } else {
+                    btn.className = "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition duration-200 group text-gray-400 hover:bg-studioCard hover:text-white";
+                }
+            });
+
+            if (tabId === 'all-albums') {
+                renderAllAlbums();
+            } else if (tabId === 'processing') {
+                renderFilteredGrid('processing', 'processing-grid');
+            } else if (tabId === 'completed') {
+                renderFilteredGrid('completed', 'completed-grid');
+            } else if (tabId === 'progress-tracking') {
+                renderProgressTracking();
+            }
+        }
+
+        function renderFilteredGrid(status, gridId) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const filtered = albums.filter(alb => alb.status === status);
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-10 text-gray-500 text-sm">Chưa có album nào ở trạng thái này.</div>';
+                return;
+            }
+
+            filtered.forEach(alb => {
+                const card = document.createElement('div');
+                card.className = "bg-studioCard border border-studioBorder rounded-2xl overflow-hidden flex flex-col justify-between group hover:border-gray-800 transition duration-200";
+                card.innerHTML = `
+                    <div class="relative aspect-[3/2] overflow-hidden bg-zinc-900 cursor-pointer" onclick="openClientView('${alb.id}')">
+                        <img src="${alb.cover}" alt="${alb.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-85"></div>
+                        <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between">
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-md ${status === 'completed' ? 'bg-studioAccent/20 border border-studioAccent/30 text-studioAccent' : 'bg-amber-500/20 border border-amber-500/30 text-amber-400'}">
+                                ${status === 'completed' ? 'Đã hoàn thiện' : 'Đang culling'}
+                            </span>
+                            <span class="text-xs text-gray-300">${alb.images ? alb.images.length : 0} ảnh</span>
+                        </div>
+                    </div>
+                    <div class="p-4 flex flex-col justify-between flex-1">
+                        <div>
+                            <h3 class="text-base font-bold text-white leading-snug hover:text-studioAccent cursor-pointer transition duration-150" onclick="openClientView('${alb.id}')">${alb.name}</h3>
+                            <p class="text-[11px] text-gray-500 mt-1 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"></path></svg>
+                                ${alb.date}
+                            </p>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-1 border-t border-studioBorder pt-3 text-xs">
+                            <span class="text-gray-500 font-mono truncate max-w-[90px]" title="${alb.folderId}">${alb.folderId}</span>
+                            <div class="flex items-center gap-1">
+                                ${alb.folderId ? `
+                                <button onclick="copyAlbumViewerLink(getViewerLink('${alb.folderId}'), event)" class="bg-studioBorder hover:bg-studioCardHover text-studioAccent p-1.5 rounded-lg transition shrink-0" title="Sao chép link gửi khách">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                </button>
+                                <button onclick="syncAlbumHeartSelections('${alb.id}', event)" class="bg-studioBorder hover:bg-studioCardHover text-sky-400 p-1.5 rounded-lg transition shrink-0" title="Đồng bộ khách chọn ảnh">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                </button>
+                                ` : ''}
+                                <button onclick="toggleAlbumStatus('${alb.id}', event)" class="bg-studioBorder hover:bg-studioCardHover text-gray-200 px-2.5 py-1.5 rounded-lg font-medium transition shrink-0" title="Đổi trạng thái">
+                                    ${alb.status === 'completed' ? 'Đặt là Đang culling' : 'Đặt là Đã hoàn thiện'}
+                                </button>
+                                <button onclick="openClientView('${alb.id}')" class="bg-studioBorder hover:bg-studioCardHover text-white px-2.5 py-1.5 rounded-lg font-medium transition shrink-0">Xem</button>
+                                <button onclick="deleteAlbum('${alb.id}', event)" class="hover:bg-rose-950/20 border border-transparent hover:border-rose-900/30 text-gray-500 hover:text-rose-400 p-1.5 rounded-lg transition shrink-0" title="Xóa Album">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-1.5 14.5A2.25 2.25 0 0 1 15.75 25H8.25A2.25 2.25 0 0 1 6 22.75L4.5 8.25M3 5.25h18M9 5.25V3.75A1.5 1.5 0 0 1 10.5 2.25h3a1.5 1.5 0 0 1 1.5 1.5V5.25m-9 3H18"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderProgressTracking() {
+            document.getElementById('progress-total-albums').innerText = albums.length;
+            const taskList = document.getElementById('progress-tasks-list');
+            taskList.innerHTML = '';
+
+            albums.forEach(alb => {
+                const taskCard = document.createElement('div');
+                taskCard.className = "bg-[#121216]/50 p-4 rounded-xl border border-studioBorder flex items-center justify-between text-sm hover:border-gray-800 transition duration-150";
+                
+                const isDone = alb.status === 'completed';
+                taskCard.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-2.5 h-2.5 rounded-full ${isDone ? 'bg-studioAccent shadow-sm shadow-studioAccent' : 'bg-amber-500 shadow-sm shadow-amber-500'}"></span>
+                        <div>
+                            <p class="font-medium text-white">${alb.name}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">${isDone ? 'Khách đã gửi RETOUCH và đóng dự án.' : 'Đang chờ khách duyệt thả tim ảnh để culling.'}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs ${isDone ? 'text-studioAccent bg-studioAccent/10' : 'text-amber-400 bg-amber-500/10'} px-2.5 py-1 rounded font-medium border ${isDone ? 'border-studioAccent/20' : 'border-amber-500/20'}">
+                            ${isDone ? 'Đã hoàn thiện' : 'Đang culling'}
+                        </span>
+                    </div>
+                `;
+                taskList.appendChild(taskCard);
+            });
+        }
+
+        function updateSidebarCounts() {
+            document.getElementById('count-all').innerText = albums.length;
+            document.getElementById('count-processing').innerText = albums.filter(a => a.status === 'processing').length;
+            document.getElementById('count-completed').innerText = albums.filter(a => a.status === 'completed').length;
+        }
+
+        let selectedLocalFolderPath = "";
+        let createMethod = "upload"; // default: upload
+
+        function setCreateMethod(method) {
+            createMethod = method;
+            const btnUpload = document.getElementById('method-btn-upload');
+            const btnLink = document.getElementById('method-btn-link');
+            const secUpload = document.getElementById('method-upload-section');
+            const secLink = document.getElementById('method-link-section');
+
+            if (method === 'upload') {
+                btnUpload.className = "py-2 text-xs font-bold rounded-lg transition-all bg-studioBorder text-white";
+                btnLink.className = "py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white";
+                secUpload.classList.remove('hidden');
+                secLink.classList.add('hidden');
+            } else {
+                btnLink.className = "py-2 text-xs font-bold rounded-lg transition-all bg-studioBorder text-white";
+                btnUpload.className = "py-2 text-xs font-bold rounded-lg transition-all text-gray-400 hover:text-white";
+                secLink.classList.remove('hidden');
+                secUpload.classList.add('hidden');
+            }
+        }
+
+        async function handleSelectLocalFolder() {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.select_local_folder) {
+                const res = await window.pywebview.api.select_local_folder();
+                if (res) {
+                    if (res.error) {
+                        showToast("Lỗi đọc thư mục", res.error, "error");
+                        return;
+                    }
+                    selectedLocalFolderPath = res.path;
+                    document.getElementById('selected-path-display').innerText = res.path;
+                    document.getElementById('selected-path-display').classList.remove('text-gray-500');
+                    document.getElementById('selected-path-display').classList.add('text-white');
+                    
+                    const badge = document.getElementById('selected-count-badge');
+                    badge.innerText = res.count + " ảnh";
+                    badge.classList.remove('hidden');
+                }
+            } else {
+                showToast("Lỗi môi trường", "Hộp thoại chọn thư mục chỉ khả dụng trên ứng dụng Desktop.", "error");
+            }
+        }
+
+        async function loadUserDriveFolders() {
+            if (!window.pywebview || !window.pywebview.api || !window.pywebview.api.list_drive_folders) {
+                showToast("Lỗi môi trường", "Tính năng này chỉ khả dụng trên ứng dụng Desktop.", "error");
+                return;
+            }
+            
+            showToast("Đang tải...", "Đang kết nối lấy danh sách thư mục từ Google Drive...", "info");
+            const res = await window.pywebview.api.list_drive_folders();
+            if (res && res.status === 'success') {
+                const select = document.getElementById('drive-folder-select');
+                select.innerHTML = '<option value="">-- Chọn một thư mục --</option>';
+                
+                if (res.folders && res.folders.length > 0) {
+                    res.folders.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f.id;
+                        opt.innerText = f.name;
+                        select.appendChild(opt);
+                    });
+                    document.getElementById('drive-folders-list-container').classList.remove('hidden');
+                    showToast("Đã tải xong", `Tìm thấy ${res.folders.length} thư mục trong Drive của bạn.`, "success");
+                } else {
+                    showToast("Không tìm thấy", "Không tìm thấy thư mục nào trên Google Drive của bạn.", "info");
+                }
+            } else {
+                showToast("Lỗi kết nối", res ? res.message : "Không thể lấy danh sách thư mục.", "error");
+            }
+        }
+
+        function openCreateAlbumModal() {
+            document.getElementById('modal-create-album').classList.remove('hidden');
+            setCreateMethod('upload');
+        }
+        
+        function closeCreateAlbumModal() {
+            document.getElementById('modal-create-album').classList.add('hidden');
+            document.getElementById('input-album-name').value = '';
+            document.getElementById('input-folder-id').value = '';
+            document.getElementById('input-cover-url').value = '';
+            selectedLocalFolderPath = "";
+            document.getElementById('selected-path-display').innerText = "Chưa chọn thư mục";
+            document.getElementById('selected-path-display').classList.add('text-gray-500');
+            document.getElementById('selected-count-badge').classList.add('hidden');
+            document.getElementById('drive-folders-list-container').classList.add('hidden');
+        }
+
+        async function submitCreateAlbum() {
+            const name = document.getElementById('input-album-name').value.trim();
+            const status = document.getElementById('input-album-status').value;
+            const coverUrlInput = document.getElementById('input-cover-url').value.trim();
+
+            if (!name) {
+                showToast("Lỗi nhập liệu", "Vui lòng nhập tên album!", "error");
+                return;
+            }
+
+            const cover = coverUrlInput || '';
+
+            if (createMethod === 'upload') {
+                if (!selectedLocalFolderPath) {
+                    showToast("Lỗi chọn thư mục", "Vui lòng chọn thư mục ảnh trên máy tính của bạn!", "error");
+                    return;
+                }
+                
+                showGlobalUploadProgress();
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.create_and_upload_album) {
+                    const res = await window.pywebview.api.create_and_upload_album(name, status, selectedLocalFolderPath, coverUrlInput);
+                    if (res && res.status === 'error') {
+                        hideGlobalUploadProgress();
+                        showToast("Lỗi Google Drive", res.message, "error", 5000);
+                    }
+                } else {
+                    hideGlobalUploadProgress();
+                    showToast("Lỗi kết nối", "Không thể gọi API Python backend.", "error");
+                }
+            } else {
+                let folderId = document.getElementById('input-folder-id').value.trim();
+                if (!folderId) {
+                    showToast("Lỗi nhập liệu", "Vui lòng nhập ID thư mục Google Drive!", "error");
+                    return;
+                }
+
+                // Tự động bóc tách ID thư mục từ URL Google Drive
+                if (folderId.includes("drive.google.com")) {
+                    const foldersMatch = folderId.match(/folders\/([a-zA-Z0-9-_]+)/);
+                    const idMatch = folderId.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+                    if (foldersMatch) {
+                        folderId = foldersMatch[1];
+                    } else if (idMatch) {
+                        folderId = idMatch[1];
+                    }
+                    document.getElementById('input-folder-id').value = folderId; // Hiển thị ID sạch lên giao diện
+                }
+
+                showToast("Đang đồng bộ...", "Đang quét danh sách ảnh thực tế từ Google Drive...", "info");
+                
+                if (window.pywebview && window.pywebview.api && window.pywebview.api.fetch_images_from_drive_folder) {
+                    const res = await window.pywebview.api.fetch_images_from_drive_folder(folderId);
+                    if (res && res.status === 'success') {
+                        const newAlbumId = 'album-' + Date.now();
+                        const formattedDate = getFormattedToday();
+                        const finalCover = coverUrlInput || (res.images.length > 0 ? res.images[0].url : cover);
+                        
+                        const newAlbum = {
+                            id: newAlbumId,
+                            name: name,
+                            date: formattedDate,
+                            status: status,
+                            folderId: folderId,
+                            cover: finalCover,
+                            viewerLink: getViewerLink(folderId),
+                            images: res.images,
+                            selections: []
+                        };
+
+                        albums.unshift(newAlbum);
+                        saveAlbums();
+                        renderAllAlbums();
+                        updateSidebarCounts();
+                        closeCreateAlbumModal();
+                        showToast("Liên kết thành công! 🔗", `Đã đồng bộ ${res.images.length} ảnh thực tế từ thư mục Google Drive.`, "success");
+                    } else {
+                        showToast("Lỗi liên kết Drive", res ? res.message : "Không thể lấy danh sách ảnh.", "error");
+                    }
+                } else {
+                    const newAlbumId = 'album-' + Date.now();
+                    const formattedDate = getFormattedToday();
+
+                    const newAlbum = {
+                        id: newAlbumId,
+                        name: name,
+                        date: formattedDate,
+                        status: status,
+                        folderId: folderId,
+                        cover: cover,
+                        images: generateMockImages(),
+                        selections: []
+                    };
+
+                    albums.unshift(newAlbum);
+                    saveAlbums();
+                    renderAllAlbums();
+                    updateSidebarCounts();
+                    closeCreateAlbumModal();
+                    showToast("Liên kết mô phỏng", `Hệ thống đang chạy thử nghiệm trình duyệt.`, "info");
+                }
+            }
+        }
+
+        // Global functions for Upload Callbacks from Python
+        window.updateUploadStatus = function(statusText) {
+            const el = document.getElementById('upload-progress-status');
+            if (el) el.innerText = statusText;
+        };
+
+        window.updateUploadProgress = function(current, total, filename) {
+            const percentage = Math.round((current / total) * 100);
+            const statusEl = document.getElementById('upload-progress-status');
+            if (statusEl) statusEl.innerText = "Đang tải ảnh: " + filename;
+            
+            const pctEl = document.getElementById('upload-progress-percentage');
+            if (pctEl) pctEl.innerText = percentage + "%";
+            
+            const fracEl = document.getElementById('upload-progress-fraction');
+            if (fracEl) fracEl.innerText = current + "/" + total + " ảnh";
+            
+            const barEl = document.getElementById('upload-progress-bar');
+            if (barEl) barEl.style.width = percentage + "%";
+        };
+
+        window.uploadAlbumSuccess = function(name, status, folderId, publicViewerLink, cover, imagesArray) {
+            hideGlobalUploadProgress();
+            
+            const newAlbumId = 'album-' + Date.now();
+            const formattedDate = getFormattedToday();
+
+            const finalCover = cover || (imagesArray && imagesArray.length > 0 ? imagesArray[0].url : 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&q=80&w=800');
+
+            const newAlbum = {
+                id: newAlbumId,
+                name: name,
+                date: formattedDate,
+                status: status,
+                folderId: folderId,
+                cover: finalCover,
+                images: imagesArray,
+                viewerLink: getViewerLink(folderId),
+                selections: []
+            };
+
+            albums.unshift(newAlbum);
+            saveAlbums();
+            renderAllAlbums();
+            updateSidebarCounts();
+            closeCreateAlbumModal();
+
+            showViewerLinkModal(name, getViewerLink(folderId));
+        };
+
+        function showViewerLinkModal(albumName, link) {
+            document.getElementById('viewer-link-album-name').innerText = `Dự án "${albumName}" đã đồng bộ!`;
+            document.getElementById('input-viewer-link-val').value = link;
+            document.getElementById('modal-viewer-link').classList.remove('hidden');
+        }
+
+        function closeViewerLinkModal() {
+            document.getElementById('modal-viewer-link').classList.add('hidden');
+        }
+
+        function copyViewerLink() {
+            const input = document.getElementById('input-viewer-link-val');
+            input.select();
+            document.execCommand('copy');
+            showToast("Đã sao chép! 📋", "Link xem ảnh công khai đã được lưu vào clipboard.", "success");
+        }
+
+        function openViewerLinkInBrowser() {
+            const link = document.getElementById('input-viewer-link-val').value;
+            try {
+                const url = new URL(link);
+                const folderId = url.searchParams.get('folder_id') || url.searchParams.get('folderId');
+                if (folderId) {
+                    const activePort = window.location.port || '18090';
+                    const localLink = `http://127.0.0.1:${activePort}/viewer.html?folder_id=${folderId}`;
+                    window.open(localLink, '_blank');
+                    return;
+                }
+            } catch (e) {}
+            window.open(link, '_blank');
+        }
+
+        function showGlobalUploadProgress() {
+            document.getElementById('modal-upload-progress').classList.remove('hidden');
+            document.getElementById('upload-progress-status').innerText = "Đang khởi tạo...";
+            document.getElementById('upload-progress-percentage').innerText = "0%";
+            document.getElementById('upload-progress-fraction').innerText = "0/0 ảnh";
+            document.getElementById('upload-progress-bar').style.width = "0%";
+        }
+
+        function hideGlobalUploadProgress() {
+            document.getElementById('modal-upload-progress').classList.add('hidden');
+        }
+
+        function copyAlbumViewerLink(link, event) {
+            if (event) event.stopPropagation();
+            const tempInput = document.createElement('textarea');
+            tempInput.value = link;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast("Đã sao chép! 📋", "Đã copy liên kết chọn ảnh công khai gửi cho khách hàng.", "success");
+        }
+
+        async function syncAlbumHeartSelections(albumId, event) {
+            if (event) event.stopPropagation();
+            const alb = albums.find(a => a.id === albumId);
+            if (!alb) return;
+            if (!alb.folderId || alb.folderId === 'Chưa liên kết') {
+                showToast("Lỗi đồng bộ", "Album này chưa được liên kết Google Drive.", "error");
+                return;
+            }
+
+            showToast("Đang đồng bộ...", "Đang kiểm tra danh sách chọn ảnh từ khách...", "info");
+
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.sync_album_selection) {
+                const res = await window.pywebview.api.sync_album_selection(alb.folderId);
+                if (res && res.status === 'success') {
+                    alb.selections = res.selections || [];
+                    saveAlbums();
+                    
+                    // If we are currently viewing this album, update selectedFiles
+                    if (currentActiveAlbum && currentActiveAlbum.id === albumId) {
+                        selectedFiles = alb.selections;
+                        document.getElementById('client-selected-count').innerText = selectedFiles.length;
+                        renderClientImageGrid();
+                    }
+                    
+                    renderAllAlbums();
+                    updateSidebarCounts();
+                    showToast("Đồng bộ hoàn tất! 🚀", `Khách hàng đã chọn ${alb.selections.length} ảnh trong album này.`, "success");
+                } else {
+                    showToast("Lỗi đồng bộ", res ? res.message : "Có lỗi xảy ra", "error");
+                }
+            } else {
+                showToast("Lỗi kết nối", "Bridge Python chưa sẵn sàng.", "error");
+            }
+        }
+
+        function renderAllAlbums() {
+            const grid = document.getElementById('albums-grid');
+            if (!grid) return;
+
+            const createBtn = grid.firstElementChild;
+            grid.innerHTML = '';
+            grid.appendChild(createBtn);
+
+            albums.forEach(alb => {
+                const card = document.createElement('div');
+                card.className = "bg-studioCard border border-studioBorder rounded-2xl overflow-hidden flex flex-col justify-between group hover:border-gray-800 transition duration-200";
+                card.innerHTML = `
+                    <div class="relative aspect-[3/2] overflow-hidden bg-zinc-900 cursor-pointer" onclick="openClientView('${alb.id}')">
+                        <img src="${alb.cover}" alt="${alb.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-85"></div>
+                        <div class="absolute bottom-3 left-4 right-4 flex items-center justify-between">
+                            <span class="text-[11px] font-semibold px-2.5 py-0.5 rounded-md ${alb.status === 'completed' ? 'bg-studioAccent/20 border border-studioAccent/30 text-studioAccent' : 'bg-amber-500/20 border border-amber-500/30 text-amber-400'}">
+                                ${alb.status === 'completed' ? 'Đã hoàn thiện' : 'Đang culling'}
+                            </span>
+                            <span class="text-xs text-gray-300">${alb.images ? alb.images.length : 0} ảnh</span>
+                        </div>
+                    </div>
+                    <div class="p-4 flex flex-col justify-between flex-1">
+                        <div>
+                            <h3 class="text-base font-bold text-white leading-snug hover:text-studioAccent cursor-pointer transition duration-150" onclick="openClientView('${alb.id}')">${alb.name}</h3>
+                            <p class="text-[11px] text-gray-500 mt-1 flex items-center gap-1.5">
+                                <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"></path></svg>
+                                ${alb.date}
+                            </p>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between gap-1 border-t border-studioBorder pt-3 text-xs">
+                            <span class="text-gray-500 font-mono truncate max-w-[90px]" title="${alb.folderId}">${alb.folderId}</span>
+                            <div class="flex items-center gap-1">
+                                ${alb.folderId ? `
+                                <button onclick="copyAlbumViewerLink(getViewerLink('${alb.folderId}'), event)" class="bg-studioBorder hover:bg-studioCardHover text-studioAccent p-1.5 rounded-lg transition shrink-0" title="Sao chép link gửi khách">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>
+                                </button>
+                                <button onclick="syncAlbumHeartSelections('${alb.id}', event)" class="bg-studioBorder hover:bg-studioCardHover text-sky-400 p-1.5 rounded-lg transition shrink-0" title="Đồng bộ khách chọn ảnh">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+                                </button>
+                                ` : ''}
+                                <button onclick="toggleAlbumStatus('${alb.id}', event)" class="bg-studioBorder hover:bg-studioCardHover text-gray-300 p-1.5 rounded-lg transition shrink-0" title="Đổi trạng thái (processing/completed)">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+                                </button>
+                                <button onclick="openClientView('${alb.id}')" class="bg-studioBorder hover:bg-studioCardHover text-white px-2.5 py-1.5 rounded-lg font-medium transition shrink-0">Xem</button>
+                                <button onclick="deleteAlbum('${alb.id}', event)" class="hover:bg-rose-950/20 border border-transparent hover:border-rose-900/30 text-gray-500 hover:text-rose-400 p-1.5 rounded-lg transition shrink-0" title="Xóa Album">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-1.5 14.5A2.25 2.25 0 0 1 15.75 25H8.25A2.25 2.25 0 0 1 6 22.75L4.5 8.25M3 5.25h18M9 5.25V3.75A1.5 1.5 0 0 1 10.5 2.25h3a1.5 1.5 0 0 1 1.5 1.5V5.25m-9 3H18"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterAllAlbums() {
+            const query = document.getElementById('album-search').value.toLowerCase().trim();
+            albums.forEach((alb, index) => {
+                const cardDom = document.getElementById('albums-grid').children[index + 1];
+                if (cardDom) {
+                    if (alb.name.toLowerCase().includes(query) || alb.folderId.toLowerCase().includes(query)) {
+                        cardDom.style.display = 'flex';
+                    } else {
+                        cardDom.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function deleteAlbum(id, e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            if (confirm("Bạn có chắc chắn muốn xóa album này? Mọi dữ liệu đã chọn sẽ mất.")) {
+                albums = albums.filter(a => a.id !== id);
+                saveAlbums();
+                renderAllAlbums();
+                updateSidebarCounts();
+                showToast("Đã xóa", "Album đã bị xóa khỏi hệ thống.", "info");
+            }
+        }
+
+        function toggleAlbumStatus(id, e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const alb = albums.find(a => a.id === id);
+            if (!alb) {
+                showToast('Lỗi', 'Album không tồn tại', 'error');
+                return;
+            }
+            alb.status = (alb.status === 'completed') ? 'processing' : 'completed';
+            saveAlbums();
+            renderAllAlbums();
+            updateSidebarCounts();
+            showToast('Đã cập nhật', `Trạng thái album "${alb.name}" đã được đổi.`, 'success');
+            if (currentActiveAlbum && currentActiveAlbum.id === id) {
+                currentActiveAlbum = alb;
+                renderClientGallery(alb.images);
+            }
+        }
+
+        // ==========================================
+        // KHU VỰC DUYỆT ẢNH CHO KHÁCH HÀNG (CLIENT HEART VIEW)
+        // ==========================================
+
+        function openClientView(albumId) {
+            const alb = albums.find(a => a.id === albumId);
+            if (!alb) return;
+
+            currentActiveAlbum = alb;
+            selectedFiles = alb.selections || []; 
+            clientFilterMode = 'all';
+
+            document.getElementById('client-album-title').innerText = alb.name;
+            document.getElementById('client-selected-count').innerText = selectedFiles.length;
+            document.getElementById('client-search').value = '';
+
+            document.getElementById('filter-all-btn').className = "px-3.5 py-1.5 rounded-lg bg-studioBorder text-white font-medium text-xs border border-studioAccent/35 transition";
+            document.getElementById('filter-liked-btn').className = "px-3.5 py-1.5 rounded-lg bg-[#121216] text-gray-500 font-medium text-xs border border-transparent hover:text-white transition";
+
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+                tab.classList.remove('block');
+            });
+
+            document.getElementById('view-client-gallery').classList.remove('hidden');
+            document.getElementById('client-bottom-bar').classList.remove('translate-y-full');
+
+            renderClientGallery(alb.images);
+        }
+
+        function closeClientView() {
+            switchTab('all-albums');
+        }
+
+        function renderClientGallery(images) {
+            const grid = document.getElementById('client-gallery-grid');
+            grid.innerHTML = '';
+
+            if (!images || images.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500">Thư mục trống hoặc chưa kết nối Google Drive.</div>';
+                return;
+            }
+
+            let filteredImages = images;
+            if (clientFilterMode === 'liked') {
+                filteredImages = images.filter(img => selectedFiles.includes(img.name));
+            }
+
+            const query = document.getElementById('client-search').value.toLowerCase().trim();
+            if (query) {
+                filteredImages = filteredImages.filter(img => img.name.toLowerCase().includes(query));
+            }
+
+            if (filteredImages.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500 text-sm">Không tìm thấy ảnh phù hợp.</div>';
+                return;
+            }
+
+            filteredImages.forEach(img => {
+                const isSelected = selectedFiles.includes(img.name);
+                const item = document.createElement('div');
+                item.className = `bg-studioCard rounded-xl overflow-hidden border ${isSelected ? 'border-red-500/50' : 'border-studioBorder'} flex flex-col justify-between group hover:border-gray-700 transition duration-150 relative`;
+                
+                item.innerHTML = `
+                    <div class="relative cursor-pointer overflow-hidden aspect-[3/2] bg-zinc-950" onclick="openLightbox('${img.url}', '${img.name}')">
+                        <img src="${img.url}" alt="${img.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                        <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="px-3 py-1.5 bg-black/60 rounded-full border border-white/10 text-white text-xs select-none">Xem chi tiết</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="toggleHeartSelection('${img.name}', this)" class="absolute top-2.5 right-2.5 p-2 bg-black/60 hover:bg-black/80 rounded-full border border-white/10 text-gray-300 hover:text-white transition duration-200 focus:outline-none z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 ${isSelected ? 'heart-active' : 'fill-none stroke-current'}" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                        </svg>
+                    </button>
+
+                    <div class="p-3 flex items-center justify-between border-t border-studioBorder bg-studioCard">
+                        <span class="text-[11px] text-gray-400 font-mono truncate max-w-[120px] sm:max-w-[140px]" title="${img.name}">${img.name}</span>
+                        <span class="text-[10px] ${isSelected ? 'text-red-400 font-bold' : 'text-gray-600'} select-none transition">
+                            ${isSelected ? 'Đã thích ❤️' : 'Lưu'}
+                        </span>
+                    </div>
+                `;
+                // attach contextmenu (right-click) to image so user can set it as album cover
+                try {
+                    const imgEl = item.querySelector('img');
+                    if (imgEl) {
+                        imgEl.addEventListener('contextmenu', (ev) => {
+                            ev.preventDefault();
+                            showClientImageContext(ev, img.url, img.name);
+                        });
+                    }
+                } catch (e) {
+                    // ignore
+                }
+                grid.appendChild(item);
+            });
+        }
+
+        // Context menu for client images (right-click)
+        function showClientImageContext(e, url, name) {
+            const existing = document.getElementById('client-img-ctx-menu');
+            if (existing) existing.remove();
+
+            const menu = document.createElement('div');
+            menu.id = 'client-img-ctx-menu';
+            menu.style.position = 'fixed';
+            menu.style.left = (e.clientX || 100) + 'px';
+            menu.style.top = (e.clientY || 100) + 'px';
+            menu.style.zIndex = 99999;
+            menu.className = "bg-[#0c0c0e]/95 backdrop-blur-md border border-studioBorder rounded-xl p-1.5 shadow-2xl z-[99999]";
+            menu.innerHTML = `
+                <button id="set-cover-btn" class="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-gray-200 hover:text-white hover:bg-white/10 rounded-lg w-full text-left transition duration-150">
+                    <svg class="w-3.5 h-3.5 text-studioAccent" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375 0 11-.75 0 .375 0 01.75 0z"/>
+                    </svg>
+                    Đặt làm ảnh bìa Album
+                </button>
+            `;
+            document.body.appendChild(menu);
+
+            const handleBodyClick = (ev) => {
+                if (!menu.contains(ev.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', handleBodyClick);
+                }
+            };
+
+            document.getElementById('set-cover-btn').addEventListener('click', () => {
+                setAlbumCover(url);
+                menu.remove();
+                document.removeEventListener('click', handleBodyClick);
+            });
+
+            // Sử dụng setTimeout để tránh sự kiện click hiện tại kích hoạt đóng menu ngay lập tức
+            setTimeout(() => {
+                document.addEventListener('click', handleBodyClick);
+            }, 50);
+        }
+
+        function setAlbumCover(url) {
+            if (!currentActiveAlbum) {
+                showToast('Lỗi', 'Không có album đang mở', 'error');
+                return;
+            }
+            currentActiveAlbum.cover = url;
+            const idx = albums.findIndex(a => a.id === currentActiveAlbum.id);
+            if (idx !== -1) albums[idx].cover = url;
+            saveAlbums();
+            renderAllAlbums();
+            renderClientGallery(currentActiveAlbum.images);
+            showToast('Đã cập nhật', 'Ảnh đã được đặt làm ảnh bìa.', 'success');
+        }
+
+        function toggleClientFilter(mode) {
+            clientFilterMode = mode;
+            const allBtn = document.getElementById('filter-all-btn');
+            const likedBtn = document.getElementById('filter-liked-btn');
+
+            if (mode === 'all') {
+                allBtn.className = "px-3.5 py-1.5 rounded-lg bg-studioBorder text-white font-medium text-xs border border-studioAccent/35 transition";
+                likedBtn.className = "px-3.5 py-1.5 rounded-lg bg-[#121216] text-gray-500 font-medium text-xs border border-transparent hover:text-white transition";
+            } else {
+                allBtn.className = "px-3.5 py-1.5 rounded-lg bg-[#121216] text-gray-500 font-medium text-xs border border-transparent hover:text-white transition";
+                likedBtn.className = "px-3.5 py-1.5 rounded-lg bg-red-950/20 text-red-400 font-medium text-xs border border-red-500/30 transition";
+            }
+            renderClientGallery(currentActiveAlbum.images);
+        }
+
+        function filterClientImages() {
+            renderClientGallery(currentActiveAlbum.images);
+        }
+
+        function toggleHeartSelection(fileName, btnElement) {
+            const svgPath = btnElement.querySelector('svg');
+            const cardElement = btnElement.closest('.bg-studioCard');
+
+            if (selectedFiles.includes(fileName)) {
+                selectedFiles = selectedFiles.filter(name => name !== fileName);
+                svgPath.className.baseVal = "w-4.5 h-4.5 fill-none stroke-current";
+                svgPath.removeAttribute("fill");
+                cardElement.classList.remove('border-red-500/50');
+                cardElement.classList.add('border-studioBorder');
+                const textLabel = cardElement.querySelector('.p-3 > span:last-child');
+                if (textLabel) {
+                    textLabel.innerText = "Lưu";
+                    textLabel.className = "text-[10px] text-gray-600 select-none transition";
+                }
+            } else {
+                selectedFiles.push(fileName);
+                svgPath.className.baseVal = "w-4.5 h-4.5 heart-active";
+                cardElement.classList.add('border-red-500/50');
+                cardElement.classList.remove('border-studioBorder');
+                const textLabel = cardElement.querySelector('.p-3 > span:last-child');
+                if (textLabel) {
+                    textLabel.innerText = "Đã thích ❤️";
+                    textLabel.className = "text-[10px] text-red-400 font-bold select-none transition";
+                }
+            }
+
+            if (currentActiveAlbum) {
+                currentActiveAlbum.selections = selectedFiles;
+                saveAlbums();
+            }
+
+            document.getElementById('client-selected-count').innerText = selectedFiles.length;
+
+            if (clientFilterMode === 'liked') {
+                renderClientGallery(currentActiveAlbum.images);
+            }
+        }
+
+        function deselectAllClientImages() {
+            if (selectedFiles.length === 0) return;
+            if (confirm("Bạn có chắc chắn muốn bỏ thả tim tất cả các ảnh đã chọn?")) {
+                selectedFiles = [];
+                if (currentActiveAlbum) {
+                    currentActiveAlbum.selections = [];
+                    saveAlbums();
+                }
+                document.getElementById('client-selected-count').innerText = 0;
+                renderClientGallery(currentActiveAlbum.images);
+                showToast("Đã thiết lập lại", "Đã xóa toàn bộ ảnh yêu thích trong album này.", "info");
+            }
+        }
+
+        function exportSelectedFiles() {
+            if (selectedFiles.length === 0) {
+                showToast("Lọc ảnh trống", "Bạn chưa thả tim tấm hình nào cả! Vui lòng thả tim trước.", "error");
+                return;
+            }
+            const resultText = selectedFiles.join(', ');
+            
+            const tempInput = document.createElement('textarea');
+            tempInput.value = resultText;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            
+            showToast("Đã sao chép thành công! 📋", `${selectedFiles.length} file đã được lưu vào bộ nhớ tạm. Sẵn sàng sử dụng.`, "success", 5000);
+        }
+
+        // ==========================================
+        // LIGHTBOX & WATERMARK SYSTEM
+        // ==========================================
+
+        function openLightbox(url, name) {
+            const modal = document.getElementById('lightbox-modal');
+            const img = document.getElementById('lightbox-img');
+            const txt = document.getElementById('lightbox-filename');
+            
+            img.src = url;
+            txt.innerText = name || '';
+
+            // Click chuột phải trên ảnh để chọn làm ảnh bìa
+            img.oncontextmenu = (ev) => {
+                ev.preventDefault();
+                showClientImageContext(ev, url, name);
+            };
+
+            renderWatermarkOverlay();
+            modal.classList.remove('hidden');
+        }
+        
+        function closeLightbox() {
+            document.getElementById('lightbox-modal').classList.add('hidden');
+        }
+
+        function renderWatermarkOverlay() {
+            const container = document.getElementById('lightbox-watermark-overlay');
+            container.innerHTML = '';
+            
+            const text = watermarkConfig.text || 'CHƯA THANH TOÁN';
+            const opacity = watermarkConfig.opacity / 100;
+            const position = watermarkConfig.position;
+
+            if (position === 'center') {
+                container.className = "absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20";
+                container.innerHTML = `
+                    <div style="opacity: ${opacity}; transform: rotate(-30deg);" class="text-white text-3xl sm:text-5xl md:text-6xl font-extrabold uppercase select-none tracking-widest border-4 border-white/20 px-6 py-3 whitespace-nowrap">
+                        ${text}
+                    </div>
+                `;
+            } else if (position === 'bottom-right') {
+                container.className = "absolute inset-0 pointer-events-none flex items-end justify-end p-6 overflow-hidden z-20";
+                container.innerHTML = `
+                    <div style="opacity: ${opacity};" class="text-white text-lg sm:text-xl font-bold uppercase select-none tracking-wider bg-black/40 px-3 py-1.5 rounded border border-white/10 whitespace-nowrap">
+                        ${text}
+                    </div>
+                `;
+            } else if (position === 'pattern') {
+                container.className = "absolute inset-0 pointer-events-none grid grid-cols-3 gap-6 p-4 overflow-hidden z-20 items-center justify-center";
+                for (let i = 0; i < 9; i++) {
+                    const el = document.createElement('div');
+                    el.style.opacity = opacity;
+                    el.style.transform = "rotate(-25deg)";
+                    el.className = "text-white text-sm sm:text-base font-bold uppercase select-none tracking-wider text-center py-6 whitespace-nowrap";
+                    el.innerText = text;
+                    container.appendChild(el);
+                }
+            }
+        }
+
+        function updateWatermarkConfig() {
+            const opacitySlider = document.getElementById('watermark-opacity');
+            const positionSelect = document.getElementById('watermark-position');
+            
+            watermarkConfig.opacity = parseInt(opacitySlider.value);
+            watermarkConfig.position = positionSelect.value;
+            
+            document.getElementById('watermark-opacity-val').innerText = watermarkConfig.opacity + '%';
+            syncWorkspaceDbToPython();
+        }
+
+        // ==========================================
+        // CÀI ĐẶT HỆ THỐNG (SETTINGS CONTROLLERS)
+        // ==========================================
+
+        function editSetting(key) {
+            activeSettingKey = key;
+            const modal = document.getElementById('modal-edit-setting');
+            const title = document.getElementById('edit-setting-title');
+            const input = document.getElementById('input-setting-val');
+
+            if (key === 'watermark') {
+                title.innerText = 'Cập nhật chữ chìm Watermark';
+                input.value = document.getElementById('watermark-val').innerText;
+            } else if (key === 'brand') {
+                title.innerText = 'Cập nhật Tên thương hiệu Studio';
+                input.value = document.getElementById('brand-val').innerText;
+            } else if (key === 'zalo') {
+                title.innerText = 'Cập nhật SĐT Zalo hỗ trợ';
+                input.value = document.getElementById('zalo-val').innerText;
+            } else if (key === 'fb') {
+                title.innerText = 'Cập nhật Fanpage Facebook';
+                input.value = document.getElementById('fb-val').innerText;
+            } else if (key === 'domain') {
+                title.innerText = 'Cập nhật Tên miền tùy chỉnh';
+                input.value = document.getElementById('domain-val').innerText;
+            } else if (key === 'client_id') {
+                title.innerText = 'Cập nhật Google Client ID';
+                input.value = localStorage.getItem('cp_google_client_id') || '61801142455-ge0cl36dn1efoscr1qebnthl02qauapb.apps.googleusercontent.com';
+            } else if (key === 'client_secret') {
+                title.innerText = 'Cập nhật Google Client Secret';
+                input.value = localStorage.getItem('cp_google_client_secret') || '';
+            } else if (key === 'viewer_base_url') {
+                title.innerText = 'Cập nhật Địa chỉ trang chọn ảnh (Viewer Base URL)';
+                input.value = localStorage.getItem('cp_viewer_base_url') || 'https://colorphoto-viewer.vercel.app';
+            }
+
+            modal.classList.remove('hidden');
+            input.focus();
+        }
+        function closeEditModal() {
+            document.getElementById('modal-edit-setting').classList.add('hidden');
+        }
+        function saveSettingVal() {
+            const inputVal = document.getElementById('input-setting-val').value.trim();
+            if (activeSettingKey === 'watermark') {
+                const val = inputVal || 'CHƯA THANH TOÁN';
+                document.getElementById('watermark-val').innerText = val;
+                watermarkConfig.text = val;
+                showToast("Đã cập nhật", "Chữ chìm Watermark mới đã được thiết lập.", "success");
+            } else if (activeSettingKey === 'brand') {
+                const brandName = inputVal || 'COLOR PHOTO';
+                document.getElementById('brand-val').innerText = brandName;
+                document.title = brandName + " - Hệ thống quản lý & chọn ảnh Studio";
+                
+                const brandContainer = document.getElementById('sidebar-brand-name');
+                if (brandContainer) {
+                    const firstWord = brandName.split(' ')[0];
+                    const remainingWords = brandName.split(' ').slice(1).join(' ') || '';
+                    brandContainer.innerHTML = `${firstWord} <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-rose-400">${remainingWords}</span>`;
+                }
+                showToast("Đã cập nhật", "Tên thương hiệu đã được cập nhật trên toàn hệ thống.", "success");
+            } else if (activeSettingKey === 'zalo') {
+                const zaloNum = inputVal || '0363578794';
+                document.getElementById('zalo-val').innerText = zaloNum;
+                document.getElementById('sidebar-zalo-info').innerText = "Zalo: " + zaloNum;
+                showToast("Đã cập nhật", "SĐT hỗ trợ Zalo mới đã được lưu.", "success");
+            } else if (activeSettingKey === 'fb') {
+                const fbLink = inputVal || 'facebook.com/colorphoto';
+                document.getElementById('fb-val').innerText = fbLink;
+                document.getElementById('sidebar-fb-info').innerText = fbLink;
+                showToast("Đã cập nhật", "Địa chỉ Fanpage mới đã được cập nhật.", "success");
+            } else if (activeSettingKey === 'domain') {
+                document.getElementById('domain-val').innerText = inputVal || 'gallery.abc.vn';
+                showToast("Đã cập nhật", "Tên miền đã lưu. Hệ thống sẽ áp dụng khi trỏ CNAME.", "success");
+            } else if (activeSettingKey === 'client_id') {
+                const cid = inputVal || '61801142455-ge0cl36dn1efoscr1qebnthl02qauapb.apps.googleusercontent.com';
+                localStorage.setItem('cp_google_client_id', cid);
+                document.getElementById('client-id-val').innerText = cid;
+                showToast("Đã cập nhật", "Google Client ID đã được lưu thành công.", "success");
+            } else if (activeSettingKey === 'client_secret') {
+                localStorage.setItem('cp_google_client_secret', inputVal);
+                document.getElementById('client-secret-val').innerText = inputVal ? '••••••••••••••••' : 'Chưa cấu hình';
+                showToast("Đã cập nhật", "Google Client Secret đã được lưu thành công.", "success");
+            } else if (activeSettingKey === 'viewer_base_url') {
+                const vurl = inputVal || 'https://colorphoto-viewer.vercel.app';
+                localStorage.setItem('cp_viewer_base_url', vurl);
+                document.getElementById('viewer-base-url-val').innerText = vurl;
+                showToast("Đã cập nhật", "Địa chỉ trang chọn ảnh (Viewer Base URL) đã được cập nhật.", "success");
+            }
+            closeEditModal();
+            syncWorkspaceDbToPython();
+        }
+
+        function syncWorkspaceDbToPython() {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.save_workspace_db) {
+                const db = {
+                    albums: albums,
+                    settings: {
+                        watermark_text: watermarkConfig.text,
+                        watermark_position: watermarkConfig.position,
+                        watermark_opacity: watermarkConfig.opacity,
+                        brand_name: document.getElementById('brand-val').innerText,
+                        zalo_phone: document.getElementById('zalo-val').innerText,
+                        fb_link: document.getElementById('fb-val').innerText,
+                        custom_domain: document.getElementById('domain-val').innerText,
+                        google_client_id: localStorage.getItem('cp_google_client_id') || '',
+                        google_client_secret: localStorage.getItem('cp_google_client_secret') || '',
+                        viewer_base_url: localStorage.getItem('cp_viewer_base_url') || 'https://colorphoto-viewer.vercel.app'
+                    },
+                    user_profile: {
+                        is_logged_in: localStorage.getItem('cp_is_logged_in') === 'true',
+                        profile: localStorage.getItem('cp_user_profile') ? JSON.parse(localStorage.getItem('cp_user_profile')) : null
+                    }
+                };
+                window.pywebview.api.save_workspace_db(db)
+                    .then(success => {
+                        console.log("Đã đồng bộ cơ sở dữ liệu sang Python:", success);
+                    })
+                    .catch(err => {
+                        console.error("Lỗi đồng bộ cơ sở dữ liệu sang Python:", err);
+                    });
+            }
+        }
+
+        function showToast(title, message, type = "success", duration = 3500) {
+            const container = document.getElementById('toast-container');
+            const toastId = 'toast-' + Date.now() + Math.random();
+
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = "bg-[#121216] border border-studioBorder rounded-xl p-4 shadow-2xl flex items-start gap-3 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300 relative overflow-hidden";
+            
+            let iconColor = "text-studioAccent bg-studioAccent/10 border-studioAccent/20";
+            let svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg>`;
+            
+            if (type === 'error') {
+                iconColor = "text-rose-500 bg-rose-500/10 border-rose-500/20";
+                svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+            } else if (type === 'info') {
+                iconColor = "text-sky-400 bg-sky-400/10 border-sky-400/20";
+                svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.063.852l-.708 2.836a.75.75 0 001.063.852l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/></svg>`;
+            }
+
+            toast.innerHTML = `
+                <div class="p-1.5 rounded-lg border ${iconColor} shrink-0">
+                    ${svgIcon}
+                </div>
+                <div class="flex-1 min-w-0 pr-4">
+                    <p class="text-sm font-bold text-white leading-none mb-1">${title}</p>
+                    <p class="text-xs text-gray-400 leading-relaxed">${message}</p>
+                </div>
+                <button onclick="this.closest('.bg-\\\\[\\\\#121216\\\\\]').remove()" class="absolute top-2.5 right-2.5 text-gray-500 hover:text-white text-base font-bold">&times;</button>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-400 via-purple-400 to-rose-400 animate-pulse"></div>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, duration);
+        }
+
+        function logoutGoogle() {
+            if (confirm("Bạn có chắc chắn muốn đăng xuất tài khoản hiện tại?")) {
+                handleLogout();
+            }
+        }
+
+        async function fetchDriveImages(folderId) {
+            // Chưa có Google OAuth setup - hiển thị ảnh tạm thời
+            // Khi bạn setup Google credentials, hàm này sẽ lấy ảnh thực từ Google Drive
+            
+            console.warn(`Folder ID ${folderId} đã được lưu. Hãy setup Google OAuth để lấy ảnh thực từ Drive.`);
+            
+            // Tạm thời trả về ảnh placeholder có tên giống thư mục
+            let placeholderImages = [];
+            for (let i = 1; i <= 12; i++) {
+                placeholderImages.push({
+                    id: 'placeholder-' + i,
+                    name: `[PLACEHOLDER] IMG_${String(i).padStart(4, '0')}.jpg`,
+                    url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1000'
+                });
+            }
+            return placeholderImages;
+        }
+
+        function generateMockImages() {
+            const urls = [
+                'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1000',
+                'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80&w=1000',
+                'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000',
+                'https://images.unsplash.com/photo-1519225495810-7512c696505a?auto=format&fit=crop&q=80&w=1000',
+                'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&q=80&w=1000',
+                'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&q=80&w=1000'
+            ];
+            let mockArr = [];
+            for (let i = 1; i <= 15; i++) {
+                const randomUrl = urls[Math.floor(Math.random() * urls.length)];
+                mockArr.push({
+                    id: 'mock-' + i + '-' + Math.random(),
+                    name: `DSC_${String(i).padStart(4, '0')}.jpg`,
+                    url: randomUrl
+                });
+            }
+            return mockArr;
+        }
+
+        function getFormattedToday() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            let mm = today.getMonth() + 1; 
+            let dd = today.getDate();
+
+            if (dd < 10) dd = '0' + dd;
+            if (mm < 10) mm = '0' + mm;
+
+            return dd + ' tháng ' + mm + ', ' + yyyy;
+        }
+
+
+
+        // ==========================================
+        // KHỞI CHẠY HỆ THỐNG BAN ĐẦU (ONLOAD)
+        // ==========================================
+        window.onload = function() {
+            // Kiểm tra xem có token chuyển hướng từ Google OAuth trong URL hash không
+            const hash = window.location.hash;
+            if (hash && hash.includes('access_token=')) {
+                const params = new URLSearchParams(hash.substring(1));
+                const accessToken = params.get('access_token');
+                if (accessToken) {
+                    // Nếu đang chạy trên trình duyệt ngoài (Chrome/Edge), gửi token về server Python để lưu
+                    if (!window.pywebview) {
+                        fetch('/save_token?token=' + encodeURIComponent(accessToken))
+                            .then(res => res.text())
+                            .then(html => {
+                                document.body.innerHTML = html;
+                                document.body.className = "bg-[#08080a] text-white font-sans flex items-center justify-center min-h-screen text-center";
+                            })
+                            .catch(err => {
+                                document.body.innerHTML = "<div class='bg-[#121216] border border-red-500/20 rounded-2xl p-8 max-w-sm mx-auto text-red-400'><h2>Lỗi kết nối đồng bộ đăng nhập!</h2><p class='text-xs mt-2 text-gray-500'>Vui lòng đảm bảo ứng dụng COLOR PHOTO vẫn đang mở.</p></div>";
+                                document.body.className = "bg-[#08080a] text-white font-sans flex items-center justify-center min-h-screen text-center";
+                            });
+                        return;
+                    }
+                }
+            }
+
+            // Kiểm tra trạng thái đăng nhập để khóa hoặc mở khóa giao diện
+            const isLoggedIn = localStorage.getItem('cp_is_logged_in');
+            const loginOverlay = document.getElementById('login-overlay');
+            if (isLoggedIn === 'true') {
+                loginOverlay.classList.add('hidden');
+            } else {
+                loginOverlay.classList.remove('hidden');
+            }
+            renderUserProfile();
+
+            renderAllAlbums();
+            updateSidebarCounts();
+            
+            document.getElementById('watermark-opacity').value = watermarkConfig.opacity;
+            document.getElementById('watermark-position').value = watermarkConfig.position;
+        };
+
+        // Đảm bảo chạy và tải dữ liệu ngay khi bridge pywebview sẵn sàng
+        window.addEventListener('pywebviewready', async function() {
+            console.log("pywebview is ready. Loading workspace database...");
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.load_workspace_db) {
+                try {
+                    const db = await window.pywebview.api.load_workspace_db();
+                    if (db && typeof db === 'object') {
+                        // Tải Albums
+                        if (db.albums && Array.isArray(db.albums)) {
+                            albums = db.albums;
+                        } else {
+                            // Nếu chưa có album nào trong DB file (lần đầu chạy)
+                            albums = defaultSampleAlbums;
+                            setTimeout(syncWorkspaceDbToPython, 1000);
+                        }
+                        
+                        // Tải Settings
+                        if (db.settings) {
+                            if (db.settings.watermark_text) {
+                                watermarkConfig.text = db.settings.watermark_text;
+                                document.getElementById('watermark-val').innerText = watermarkConfig.text;
+                            }
+                            if (db.settings.watermark_position) {
+                                watermarkConfig.position = db.settings.watermark_position;
+                                document.getElementById('watermark-position').value = watermarkConfig.position;
+                            }
+                            if (db.settings.watermark_opacity !== undefined) {
+                                watermarkConfig.opacity = db.settings.watermark_opacity;
+                                document.getElementById('watermark-opacity').value = watermarkConfig.opacity;
+                                document.getElementById('watermark-opacity-val').innerText = watermarkConfig.opacity + '%';
+                            }
+                            if (db.settings.brand_name) {
+                                document.getElementById('brand-val').innerText = db.settings.brand_name;
+                                document.title = db.settings.brand_name + " - Hệ thống quản lý & chọn ảnh Studio";
+                                const brandContainer = document.getElementById('sidebar-brand-name');
+                                if (brandContainer) {
+                                    const firstWord = db.settings.brand_name.split(' ')[0];
+                                    const remainingWords = db.settings.brand_name.split(' ').slice(1).join(' ') || '';
+                                    brandContainer.innerHTML = `${firstWord} <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-rose-400">${remainingWords}</span>`;
+                                }
+                            }
+                            if (db.settings.zalo_phone) {
+                                document.getElementById('zalo-val').innerText = db.settings.zalo_phone;
+                                document.getElementById('sidebar-zalo-info').innerText = "Zalo: " + db.settings.zalo_phone;
+                            }
+                            if (db.settings.fb_link) {
+                                document.getElementById('fb-val').innerText = db.settings.fb_link;
+                                document.getElementById('sidebar-fb-info').innerText = db.settings.fb_link;
+                            }
+                            if (db.settings.custom_domain) {
+                                document.getElementById('domain-val').innerText = db.settings.custom_domain;
+                            }
+                            if (db.settings.google_client_id) {
+                                localStorage.setItem('cp_google_client_id', db.settings.google_client_id);
+                                document.getElementById('client-id-val').innerText = db.settings.google_client_id;
+                            } else {
+                                document.getElementById('client-id-val').innerText = '61801142455-ge0cl36dn1efoscr1qebnthl02qauapb.apps.googleusercontent.com';
+                            }
+                            if (db.settings.google_client_secret) {
+                                localStorage.setItem('cp_google_client_secret', db.settings.google_client_secret);
+                                document.getElementById('client-secret-val').innerText = '••••••••••••••••';
+                            } else {
+                                document.getElementById('client-secret-val').innerText = 'Chưa cấu hình';
+                            }
+                            if (db.settings.viewer_base_url) {
+                                localStorage.setItem('cp_viewer_base_url', db.settings.viewer_base_url);
+                                document.getElementById('viewer-base-url-val').innerText = db.settings.viewer_base_url;
+                            } else {
+                                document.getElementById('viewer-base-url-val').innerText = 'https://colorphoto-viewer.vercel.app';
+                            }
+                        } else {
+                            document.getElementById('client-id-val').innerText = '61801142455-ge0cl36dn1efoscr1qebnthl02qauapb.apps.googleusercontent.com';
+                            document.getElementById('client-secret-val').innerText = 'Chưa cấu hình';
+                            document.getElementById('viewer-base-url-val').innerText = 'https://colorphoto-viewer.vercel.app';
+                        }
+                        
+                        // Tải User Profile & Login state
+                        if (db.user_profile) {
+                            if (db.user_profile.is_logged_in !== undefined) {
+                                localStorage.setItem('cp_is_logged_in', db.user_profile.is_logged_in ? 'true' : 'false');
+                                const loginOverlay = document.getElementById('login-overlay');
+                                if (db.user_profile.is_logged_in) {
+                                    loginOverlay.classList.add('hidden');
+                                } else {
+                                    loginOverlay.classList.remove('hidden');
+                                }
+                            }
+                            if (db.user_profile.profile) {
+                                localStorage.setItem('cp_user_profile', JSON.stringify(db.user_profile.profile));
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("Lỗi khi khôi phục cơ sở dữ liệu từ Python:", e);
+                }
+            }
+            
+            // Render lại giao diện
+            renderAllAlbums();
+            updateSidebarCounts();
+            renderUserProfile();
+
+            // Tự động kiểm tra liên kết Google
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.check_auto_login) {
+                window.pywebview.api.check_auto_login();
+            }
+        });
+    </script>
+</body>
+</html>

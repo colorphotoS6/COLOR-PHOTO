@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Create Album</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Photo Album Prototype</h1>
+      {% if not connected %}
+        <p>Connect your Google Drive to start storing albums.</p>
+        <a class="button" href="/connect_drive">Connect Google Drive</a>
+      {% else %}
+        <form id="createAlbum" method="post" action="/create_album">
+          <label>Album title<br><input name="title" /></label><br>
+          <label><input type="checkbox" name="downloads_allowed" /> Allow public downloads</label><br>
+          <label>Download password (optional)<br><input name="download_password" /></label><br>
+          <label><input type="checkbox" name="watermark" /> Apply watermark to uploaded images</label><br>
+          <label><input type="checkbox" name="likes_enabled" checked /> Allow likes</label><br>
+          <button type="submit">Create album</button>
+        </form>
+        <div id="created" style="margin-top:16px"></div>
+      {% endif %}
+    </div>
+    <script>
+      const form = document.getElementById('createAlbum')
+      if (form) form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const fd = new FormData(form)
+        const res = await fetch('/create_album', {method:'POST', body:fd})
+        const j = await res.json()
+        document.getElementById('created').innerHTML = `Album created: <a href="${j.link}">${j.link}</a>`
+      })
+    </script>
+  </body>
+</html>

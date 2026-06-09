@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COLOR PHOTO - Chọn Ảnh Khách Hàng</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #08080a;
+            color: #f4f4f5;
+        }
+        .heart-active {
+            fill: #ef4444 !important;
+            stroke: #ef4444 !important;
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0c0c0e;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1f1f26;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2d2d3d;
+        }
+        /* Live watermark rendering */
+        .watermark-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            z-index: 20;
+            user-select: none;
+        }
+        .watermark-text {
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            transform: rotate(-30deg);
+            white-space: nowrap;
+            border: 3px solid rgba(255, 255, 255, 0.08);
+            padding: 0.5rem 1.5rem;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 flex flex-col custom-scrollbar">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-[#121216]/90 backdrop-blur-md border-b border-[#1f1f26] px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-400 via-purple-500 to-rose-400 flex items-center justify-center font-black text-gray-950 text-sm shadow-md">CP</div>
+            <div>
+                <h1 id="album-title" class="text-base font-bold text-white leading-none">Đang tải album...</h1>
+                <p class="text-[10px] text-gray-500 mt-1 uppercase tracking-wider font-semibold">COLOR PHOTO GALLERY</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2.5 flex-wrap justify-center">
+            <span class="text-xs bg-rose-500/10 border border-rose-500/20 text-rose-400 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5">
+                ❤️ Đã chọn: <span id="sel-count">0</span> ảnh
+            </span>
+            <button onclick="copySelectionList()" class="bg-[#1c1c24] hover:bg-[#252530] text-gray-300 text-xs font-semibold px-4 py-1.5 rounded-xl border border-white/5 transition flex items-center gap-1">
+                📋 Sao chép tên ảnh
+            </button>
+            <button onclick="submitToStudio()" class="bg-[#10b981] hover:bg-[#059669] text-gray-950 text-xs font-bold px-4 py-1.5 rounded-xl transition flex items-center gap-1 shadow-md">
+                🚀 Gửi cho Studio
+            </button>
+        </div>
+    </header>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="flex-1 flex flex-col items-center justify-center p-12">
+        <div class="w-12 h-12 rounded-full border-4 border-zinc-800 border-t-sky-400 animate-spin mb-4"></div>
+        <p class="text-sm font-semibold text-gray-400">Đang tải danh sách hình ảnh từ Studio...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden flex-1 flex flex-col items-center justify-center p-12 text-center">
+        <svg class="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375 0 11-.75 0 .375 0 01.75 0z"/></svg>
+        <h3 class="text-lg font-bold text-white">Album không tồn tại hoặc trống</h3>
+        <p class="text-xs text-gray-500 mt-1 max-w-sm">Vui lòng kiểm tra lại đường dẫn chia sẻ từ nhiếp ảnh gia hoặc thử tải lại trang.</p>
+    </div>
+
+    <!-- Gallery Grid -->
+    <main id="gallery-container" class="hidden max-w-7xl mx-auto p-4 sm:p-6 w-full flex-1">
+        <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </main>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 bg-black/98 hidden z-50 flex flex-col items-center justify-center p-4">
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white text-3xl font-light hover:scale-105 transition bg-[#121216]/80 w-11 h-11 rounded-full border border-white/5 flex items-center justify-center z-50">&times;</button>
+        
+        <button onclick="prevImage()" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-3 rounded-full hover:bg-white/5 transition z-40">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+        </button>
+        <button onclick="nextImage()" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-3 rounded-full hover:bg-white/5 transition z-40">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+        </button>
+
+        <div class="max-w-full max-h-[80vh] relative flex items-center justify-center select-none overflow-hidden rounded-lg">
+            <img id="lightbox-img" src="" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border border-white/5">
+            <div class="watermark-overlay">
+                <div class="watermark-text" id="lightbox-watermark-text">COLOR PHOTO</div>
+            </div>
+        </div>
+        <div class="flex items-center justify-center gap-4 mt-6">
+            <p id="lightbox-title" class="text-sm font-medium text-gray-400 tracking-wider font-mono"></p>
+            <button id="lightbox-heart-btn" class="p-2.5 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-gray-300 hover:text-white transition duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5.5 h-5.5 fill-none stroke-current" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-12 opacity-0 transition-all duration-300 bg-[#121216] border border-[#1f1f26] rounded-xl px-4 py-3 flex items-center gap-3 shadow-2xl max-w-sm pointer-events-none">
+        <span id="toast-icon"></span>
+        <div>
+            <h4 id="toast-title" class="text-xs font-bold text-white"></h4>
+            <p id="toast-desc" class="text-[10px] text-gray-400 mt-0.5"></p>
+        </div>
+    </div>
+
+    <script>
+        const KVDB_BUCKET_URL = 'https://kvdb.io/Mn9z3xWjLhG7rWkR7rF4Y1/';
+        
+        // Lấy folder_id từ URL query param
+        const urlParams = new URLSearchParams(window.location.search);
+        const folderId = urlParams.get('folder_id');
+        
+        let imagesData = [];
+        let selectedNames = [];
+        let currentIdx = 0;
+
+        // Cài đặt Watermark mặc định
+        let watermarkText = "COLOR PHOTO";
+
+        if (!folderId) {
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        } else {
+            initGallery();
+        }
+
+        async function initGallery() {
+            try {
+                // 1. Tải danh sách hình ảnh từ KVDB
+                const response = await fetch(`${KVDB_BUCKET_URL}${folderId}_images`);
+                if (!response.ok) {
+                    throw new Error("Không thể đọc danh sách ảnh từ KVDB");
+                }
+                const data = await response.json();
+                
+                // Cấu trúc data: { name: "Album Name", images: [...], watermarkText: "..." } hoặc chỉ là mảng ảnh
+                if (Array.isArray(data)) {
+                    imagesData = data;
+                } else if (data && typeof data === 'object') {
+                    imagesData = data.images || [];
+                    if (data.name) {
+                        document.getElementById('album-title').innerText = data.name;
+                        document.title = `${data.name} - Gallery Chọn Ảnh`;
+                    }
+                    if (data.watermarkText) {
+                        watermarkText = data.watermarkText;
+                        document.getElementById('lightbox-watermark-text').innerText = watermarkText;
+                    }
+                }
+
+                if (imagesData.length === 0) {
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    return;
+                }
+
+                // 2. Tải danh sách lựa chọn của khách hàng
+                try {
+                    const selResponse = await fetch(`${KVDB_BUCKET_URL}${folderId}`);
+                    if (selResponse.ok) {
+                        const selData = await selResponse.json();
+                        if (Array.isArray(selData)) {
+                            selectedNames = selData;
+                        }
+                    }
+                } catch (err) {
+                    console.warn("Lỗi tải lượt chọn khách hàng:", err);
+                }
+
+                // Hiển thị giao diện
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('gallery-container').classList.remove('hidden');
+                
+                renderGallery();
+                updateCounter();
+
+            } catch (err) {
+                console.error("Lỗi khởi tạo:", err);
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('empty-state').classList.remove('hidden');
+                showToast("Lỗi tải trang", "Không thể đồng bộ dữ liệu hình ảnh với server.", "error");
+            }
+        }
+
+        function renderGallery() {
+            const grid = document.getElementById('gallery-grid');
+            grid.innerHTML = '';
+            
+            imagesData.forEach((img, idx) => {
+                const isSelected = selectedNames.includes(img.name);
+                const item = document.createElement('div');
+                item.className = "bg-[#121216] rounded-2xl overflow-hidden border " + 
+                                 (isSelected ? "border-red-500/50 shadow-md shadow-red-500/5" : "border-[#1f1f26]") + 
+                                 " flex flex-col justify-between group hover:border-zinc-700 transition duration-200 relative";
+                
+                item.innerHTML = `
+                    <div class="relative cursor-pointer overflow-hidden aspect-[3/2] bg-[#0c0c0e]" onclick="openLightbox(${idx})">
+                        <img src="${img.url}" alt="${img.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                            <span class="px-3.5 py-2 bg-black/75 rounded-xl border border-white/10 text-white text-xs font-semibold select-none">Xem ảnh</span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="toggleSelect('${img.name.replace(/'/g, "\\'")}', this, event)" class="absolute top-2.5 right-2.5 p-2 bg-black/60 hover:bg-black/85 rounded-full border border-white/10 text-gray-300 hover:text-white transition duration-200 focus:outline-none z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4.5 h-4.5 ${isSelected ? 'heart-active' : 'fill-none stroke-current'}" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                        </svg>
+                    </button>
+                    
+                    <div class="p-3.5 flex items-center justify-between border-t border-[#1f1f26]">
+                        <span class="text-xs text-gray-400 font-mono truncate max-w-[160px]" title="${img.name}">${img.name}</span>
+                        <span class="text-[10px] uppercase tracking-wider font-bold ${isSelected ? 'text-red-400' : 'text-gray-600'} select-none transition">
+                            ${isSelected ? 'ĐÃ THÍCH ❤️' : 'CHỌN'}
+                        </span>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        function toggleSelect(name, btnElement, event) {
+            if (event) event.stopPropagation();
+            const svg = btnElement.querySelector('svg');
+            const card = btnElement.closest('.bg-\\[\\#121216\\]');
+            
+            if (selectedNames.includes(name)) {
+                selectedNames = selectedNames.filter(n => n !== name);
+                svg.classList.remove('heart-active');
+                if (card) {
+                    card.classList.remove('border-red-500/50', 'shadow-md', 'shadow-red-500/5');
+                    card.classList.add('border-[#1f1f26]');
+                    const lbl = card.querySelector('div > span:last-child');
+                    if (lbl) {
+                        lbl.innerText = "CHỌN";
+                        lbl.className = "text-[10px] uppercase tracking-wider font-bold text-gray-600 select-none transition";
+                    }
+                }
+            } else {
+                selectedNames.push(name);
+                svg.classList.add('heart-active');
+                if (card) {
+                    card.classList.add('border-red-500/50', 'shadow-md', 'shadow-red-500/5');
+                    card.classList.remove('border-[#1f1f26]');
+                    const lbl = card.querySelector('div > span:last-child');
+                    if (lbl) {
+                        lbl.innerText = "ĐÃ THÍCH ❤️";
+                        lbl.className = "text-[10px] uppercase tracking-wider font-bold text-red-400 select-none transition";
+                    }
+                }
+            }
+            updateCounter();
+        }
+
+        function updateCounter() {
+            document.getElementById('sel-count').innerText = selectedNames.length;
+        }
+
+        function copySelectionList() {
+            if (selectedNames.length === 0) {
+                showToast("Nhắc nhở", "Bạn chưa chọn ảnh nào cả!", "info");
+                return;
+            }
+            const txt = selectedNames.join(', ');
+            navigator.clipboard.writeText(txt).then(() => {
+                showToast("Đã sao chép! 📋", `Đã copy danh sách ${selectedNames.length} ảnh vào bộ nhớ tạm.`, "success");
+            });
+        }
+
+        function submitToStudio() {
+            if (selectedNames.length === 0) {
+                showToast("Nhắc nhở", "Bạn chưa chọn ảnh nào cả!", "info");
+                return;
+            }
+            const btn = document.querySelector('button[onclick="submitToStudio()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "⏳ Đang gửi...";
+            btn.disabled = true;
+
+            fetch(`${KVDB_BUCKET_URL}${folderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(selectedNames)
+            })
+            .then(res => {
+                btn.innerHTML = "🚀 Gửi thành công!";
+                showToast("Thành công! 🎉", "Lựa chọn của bạn đã được gửi tới Studio.", "success");
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            })
+            .catch(err => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast("Lỗi gửi dữ liệu", "Không thể kết nối mạng. Vui lòng thử lại.", "error");
+            });
+        }
+
+        function openLightbox(idx) {
+            currentIdx = idx;
+            const img = imagesData[idx];
+            
+            document.getElementById('lightbox-img').src = img.url;
+            document.getElementById('lightbox-title').innerText = img.name;
+            document.getElementById('lightbox').classList.remove('hidden');
+            
+            const heartBtn = document.getElementById('lightbox-heart-btn');
+            const isSelected = selectedNames.includes(img.name);
+            const svg = heartBtn.querySelector('svg');
+            
+            if (isSelected) {
+                svg.classList.add('heart-active');
+            } else {
+                svg.classList.remove('heart-active');
+            }
+
+            heartBtn.onclick = (e) => {
+                const gridItems = document.getElementById('gallery-grid').children;
+                if (gridItems[currentIdx]) {
+                    const gridHeart = gridItems[currentIdx].querySelector('button');
+                    toggleSelect(img.name, gridHeart);
+                    
+                    const nowSelected = selectedNames.includes(img.name);
+                    if (nowSelected) {
+                        svg.classList.add('heart-active');
+                    } else {
+                        svg.classList.remove('heart-active');
+                    }
+                }
+            };
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.add('hidden');
+            document.getElementById('lightbox-img').src = '';
+        }
+
+        function prevImage() {
+            currentIdx = (currentIdx - 1 + imagesData.length) % imagesData.length;
+            openLightbox(currentIdx);
+        }
+
+        function nextImage() {
+            currentIdx = (currentIdx + 1) % imagesData.length;
+            openLightbox(currentIdx);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const lb = document.getElementById('lightbox');
+            if (lb && !lb.classList.contains('hidden')) {
+                if (e.key === 'ArrowLeft') prevImage();
+                if (e.key === 'ArrowRight') nextImage();
+                if (e.key === 'Escape') closeLightbox();
+            }
+        });
+
+        function showToast(title, desc, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const titleEl = document.getElementById('toast-title');
+            const descEl = document.getElementById('toast-desc');
+
+            titleEl.innerText = title;
+            descEl.innerText = desc;
+
+            if (type === 'success') {
+                icon.innerHTML = `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"></path></svg>`;
+            } else if (type === 'error') {
+                icon.innerHTML = `<svg class="w-5 h-5 text-rose-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"></path></svg>`;
+            } else {
+                icon.innerHTML = `<svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 111.085 1.085l-.04.02v2.625m-.75-3h.008v.008H12v-.008zM12 3a9 9 0 100 18 9 9 0 000-18z"></path></svg>`;
+            }
+
+            toast.classList.remove('translate-y-12', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-12', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+client_secret.json 
+colorphoto_secret.txt 
+*.py 
+__pycache__/ 
+*.pyc 
+*.log 
+node_modules/ 
+.DS_Store 
+COLOR_PHOTO/
+dist/
+build/
