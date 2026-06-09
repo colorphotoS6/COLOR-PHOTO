@@ -483,7 +483,7 @@
                         <p class="text-xs text-gray-500 mt-1 truncate">Trang web tĩnh để khách xem ảnh và chọn (ví dụ: https://my-gallery.vercel.app).</p>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
-                        <span class="text-xs px-4 py-1.5 bg-zinc-900 rounded-lg text-gray-400 border border-studioBorder font-mono" id="viewer-base-url-val">https://colorphoto-viewer.vercel.app</span>
+                        <span class="text-xs px-4 py-1.5 bg-zinc-900 rounded-lg text-gray-400 border border-studioBorder font-mono" id="viewer-base-url-val">https://color-photo.pages.dev</span>
                         <button onclick="editSetting('viewer_base_url')" class="p-2 bg-zinc-800 hover:bg-studioBorder border border-studioBorder rounded-lg text-gray-300 hover:text-white transition">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"></path></svg>
                         </button>
@@ -785,40 +785,7 @@
         const DEFAULT_API_KEY = 'YOUR_API_KEY';
 
         // Mảng chứa dữ liệu các Album (Load từ localStorage)
-        const defaultSampleAlbums = [
-            {
-                id: 'album-1',
-                name: 'Đám Cưới Tuấn & Phương Ly',
-                date: '02 tháng 06, 2026',
-                status: 'processing',
-                folderId: '1BEWrnRJGeXzDSHQuGVIO7d6Xw3dz1Wq',
-                cover: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=800',
-                images: [
-                    { id: '1', name: 'DSC_0001.jpg', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '2', name: 'DSC_0002.jpg', url: 'https://images.unsplash.com/photo-1532712938310-34cb3982ef74?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '3', name: 'DSC_0003.jpg', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '4', name: 'DSC_0004.jpg', url: 'https://images.unsplash.com/photo-1519225495810-7512c696505a?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '5', name: 'DSC_0005.jpg', url: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '6', name: 'DSC_0006.jpg', url: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&q=80&w=1000' }
-                ],
-                selections: []
-            },
-            {
-                id: 'album-2',
-                name: 'Pre-Wedding Studio Minimal',
-                date: '28 tháng 05, 2026',
-                status: 'completed',
-                folderId: '1_LId7uI54AOn6O_wZis3_g44G_76S0x3',
-                cover: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=800',
-                images: [
-                    { id: '11', name: 'IMG_5501.jpg', url: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '12', name: 'IMG_5502.jpg', url: 'https://images.unsplash.com/photo-1494972308805-463bc619b34e?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '13', name: 'IMG_5503.jpg', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1000' },
-                    { id: '14', name: 'IMG_5504.jpg', url: 'https://images.unsplash.com/photo-1519225495810-7512c696505a?auto=format&fit=crop&q=80&w=1000' }
-                ],
-                selections: []
-            }
-        ];
+        const defaultSampleAlbums = [];
 
         let albums = [];
         // Load albums from localStorage in a robust way.
@@ -847,7 +814,7 @@
         }
 
         function getViewerLink(folderId) {
-            const baseUrl = localStorage.getItem('cp_viewer_base_url') || 'https://colorphoto-viewer.vercel.app';
+            const baseUrl = localStorage.getItem('cp_viewer_base_url') || 'https://color-photo.pages.dev';
             const cleanUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
             return `${cleanUrl}/viewer.html?folder_id=${folderId}`;
         }
@@ -2033,7 +2000,7 @@
                 input.value = localStorage.getItem('cp_google_client_secret') || '';
             } else if (key === 'viewer_base_url') {
                 title.innerText = 'Cập nhật Địa chỉ trang chọn ảnh (Viewer Base URL)';
-                input.value = localStorage.getItem('cp_viewer_base_url') || 'https://colorphoto-viewer.vercel.app';
+                input.value = localStorage.getItem('cp_viewer_base_url') || 'https://color-photo.pages.dev';
             }
 
             modal.classList.remove('hidden');
@@ -2084,7 +2051,7 @@
                 document.getElementById('client-secret-val').innerText = inputVal ? '••••••••••••••••' : 'Chưa cấu hình';
                 showToast("Đã cập nhật", "Google Client Secret đã được lưu thành công.", "success");
             } else if (activeSettingKey === 'viewer_base_url') {
-                const vurl = inputVal || 'https://colorphoto-viewer.vercel.app';
+                const vurl = inputVal || 'https://color-photo.pages.dev';
                 localStorage.setItem('cp_viewer_base_url', vurl);
                 document.getElementById('viewer-base-url-val').innerText = vurl;
                 showToast("Đã cập nhật", "Địa chỉ trang chọn ảnh (Viewer Base URL) đã được cập nhật.", "success");
@@ -2107,7 +2074,7 @@
                         custom_domain: document.getElementById('domain-val').innerText,
                         google_client_id: localStorage.getItem('cp_google_client_id') || '',
                         google_client_secret: localStorage.getItem('cp_google_client_secret') || '',
-                        viewer_base_url: localStorage.getItem('cp_viewer_base_url') || 'https://colorphoto-viewer.vercel.app'
+                        viewer_base_url: localStorage.getItem('cp_viewer_base_url') || 'https://color-photo.pages.dev'
                     },
                     user_profile: {
                         is_logged_in: localStorage.getItem('cp_is_logged_in') === 'true',
@@ -2341,12 +2308,12 @@
                                 localStorage.setItem('cp_viewer_base_url', db.settings.viewer_base_url);
                                 document.getElementById('viewer-base-url-val').innerText = db.settings.viewer_base_url;
                             } else {
-                                document.getElementById('viewer-base-url-val').innerText = 'https://colorphoto-viewer.vercel.app';
+                                document.getElementById('viewer-base-url-val').innerText = 'https://colorphotoS6.github.io/COLOR-PHOTO';
                             }
                         } else {
                             document.getElementById('client-id-val').innerText = '61801142455-ge0cl36dn1efoscr1qebnthl02qauapb.apps.googleusercontent.com';
                             document.getElementById('client-secret-val').innerText = 'Chưa cấu hình';
-                            document.getElementById('viewer-base-url-val').innerText = 'https://colorphoto-viewer.vercel.app';
+                            document.getElementById('viewer-base-url-val').innerText = 'https://color-photo.pages.dev';
                         }
                         
                         // Tải User Profile & Login state

@@ -31,7 +31,7 @@ echo [+] Dang tien hanh dong goi ung dung o che do Thu muc...
 echo Vui long cho trong giay lat...
 echo.
 
-python -m PyInstaller --clean --onedir --noconsole --add-data "index.html;." --add-data "colorphoto_secret.txt;." --name "COLOR_PHOTO" app.py
+python -m PyInstaller --clean --onedir --noconsole --add-data "index.html;." --add-data "viewer.html;." --add-data "colorphoto_secret.txt;." --name "COLOR_PHOTO" app.py
 if %errorlevel% neq 0 goto :BUILD_ERROR
 
 :: 4. Di chuyen thu muc ung dung ra ben ngoai
